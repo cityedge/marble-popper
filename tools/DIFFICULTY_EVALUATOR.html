@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Marble Difficulty Evaluator v0.5</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#090d13;--panel:#111821;--panel2:#151e29;--line:#2b3949;--text:#e6edf5;--muted:#94a3b5;
+    --accent:#78b9ff;--good:#56d68a;--warn:#ffd166;--bad:#ff6673;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+  header{padding:14px 18px;border-bottom:1px solid var(--line);background:#0d131b;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  h1{font-size:19px;margin:0;font-weight:720}
+  .sub{color:var(--muted);font-size:12px}
+  button,input,select{font:inherit;color:var(--text);background:#17212d;border:1px solid #35475a;border-radius:7px;padding:7px 9px}
+  button{cursor:pointer;background:#1b2a39}
+  button:hover{background:#24384b}
+  button.primary{background:#173b5e;border-color:#2e6b9f}
+  button:disabled{opacity:.45;cursor:default}
+  input[type=number]{width:82px}
+  input[type=range]{padding:0;width:100%}
+  main{display:grid;grid-template-columns:minmax(640px,1.55fr) minmax(380px,.8fr);gap:12px;padding:12px;min-height:calc(100vh - 72px)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .panelHead{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .panelHead strong{font-size:14px}
+  .panelBody{padding:12px}
+  .controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+  .field{display:grid;gap:4px}
+  .field label{font-size:11px;color:var(--muted)}
+  .formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#bac7d6;font-size:12px}
+  #dropZone{border:1px dashed #4b6075;border-radius:8px;padding:8px 11px;color:var(--muted)}
+  #dropZone.drag{border-color:var(--accent);color:var(--accent);background:#0f2132}
+  .canvasWrap{background:#060a0f;position:relative}
+  canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#070b10}
+  .legend{position:absolute;left:12px;bottom:10px;display:flex;align-items:center;gap:7px;background:rgba(5,8,12,.82);padding:5px 7px;border-radius:6px;font-size:11px;color:#c0cad5}
+  .grad{width:150px;height:8px;border-radius:4px;background:linear-gradient(90deg,hsl(128 70% 48%),hsl(60 90% 52%),hsl(0 88% 60%))}
+  .stats{display:grid;grid-template-columns:repeat(6,minmax(90px,1fr));gap:7px;margin-bottom:10px}
+  .stat{background:var(--panel2);border:1px solid #263546;border-radius:7px;padding:7px 8px}
+  .stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stat .v{font-size:17px;font-weight:700;margin-top:1px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{border-bottom:1px solid #243140;padding:6px 7px;text-align:right;white-space:nowrap}
+  th{position:sticky;top:0;background:#141e29;color:#aab8c8;cursor:pointer;z-index:1}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}
+  tr.selectable{cursor:pointer}
+  tr.selectable:hover{background:#162331}
+  tr.selected{background:#17304a}
+  .tableWrap{max-height:350px;overflow:auto;border:1px solid #253445;border-radius:7px}
+  .stateRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-top:10px}
+  .tiny{font-size:11px;color:var(--muted)}
+  .reason-clear{color:var(--good)}.reason-partial{color:var(--warn)}.reason-blocked{color:var(--bad)}
+  .empty{padding:35px 20px;text-align:center;color:var(--muted)}
+  .errorBox{white-space:pre-wrap;color:#ff9ca6;background:#32151a;border:1px solid #69303a;border-radius:7px;padding:7px 9px;margin-top:8px;display:none}
+  .rightStack{display:grid;gap:12px;align-content:start}
+  .checks{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;color:#bdc8d5}
+  .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+  .filters label{display:flex;gap:5px;align-items:center;color:var(--muted);font-size:11px}
+  .filters select{padding:5px 7px;font-size:12px}
+  .checks label{display:flex;gap:5px;align-items:center}
+  @media(max-width:1050px){main{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Marble Difficulty Evaluator v0.5</h1><div class="sub">StageSpec v1/v2 · geometry-only PC vertical-fire accessibility model</div></div>
+  <button id="loadBtn" class="primary">Load StageSpecs</button>
+  <input id="fileInput" type="file" accept=".json,application/json" multiple hidden />
+  <button id="clearBtn">Clear</button>
+  <button id="bundleBtn" disabled>Export Evaluated Bundle</button>
+  <button id="csvBtn" disabled>Export Ranking CSV</button>
+  <button id="stageBtn" disabled>Export Selected StageSpec</button>
+  <div id="dropZone">JSON files can also be dropped here</div>
+</header>
+<main>
+  <section class="panel">
+    <div class="panelHead">
+      <strong>Stage preview / difficulty heatmap</strong>
+      <span id="selectedLabel" class="tiny">No stage loaded</span>
+    </div>
+    <div class="canvasWrap">
+      <canvas id="preview" width="1280" height="720"></canvas>
+      <div class="legend"><span>easy</span><span class="grad"></span><span>hard</span></div>
+    </div>
+    <div class="panelBody">
+      <div id="selectedStats" class="stats"></div>
+      <div class="stateRow">
+        <input id="stateSlider" type="range" min="1" max="1" value="1" disabled />
+        <strong id="stateLabel">State —</strong>
+      </div>
+      <div class="checks">
+        <label>heatmap <select id="heatMode"><option value="local">Local d(k)</option><option value="sustained">Sustained pressure</option></select></label>
+        <label><input id="showState" type="checkbox" checked /> show hypothetical marbles</label>
+        <label><input id="showReasons" type="checkbox" checked /> show target status</label>
+      </div>
+      <div id="targetWrap" class="tableWrap" style="margin-top:9px;max-height:230px"><div class="empty">Select a stage to inspect d(k).</div></div>
+    </div>
+  </section>
+
+  <div class="rightStack">
+    <section class="panel">
+      <div class="panelHead"><strong>Evaluation model</strong></div>
+      <div class="panelBody">
+        <div class="controls">
+          <div class="field"><label>a — evaluation marbles</label><input id="paramA" type="number" min="1" max="20" step="1" value="8" /></div>
+          <div class="field"><label>b — tail decay</label><input id="paramB" type="number" min="0" max="0.25" step="0.005" value="0.015" /></div>
+          <div class="field"><label>f — tail floor</label><input id="paramF" type="number" min="0" max="1" step="0.05" value="0.10" /></div>
+          <div class="field"><label>c — OUT exponent</label><input id="paramC" type="number" min="0" max="8" step="0.25" value="2" /></div>
+          <div class="field"><label>λ — persistence</label><input id="paramLambda" type="number" min="0" max="0.995" step="0.01" value="0.80" /></div>
+          <div class="field"><label>s — sustained mix</label><input id="paramS" type="number" min="0" max="1" step="0.05" value="0.40" /></div>
+          <button id="recalcBtn" class="primary" disabled>Recalculate All</button>
+        </div>
+        <div class="formula" style="margin-top:10px">
+          tail occupancy: p(x)=max(f, 1-bx)<br>
+          u(k)=d(k)/a<br>
+          sustained pressure: S(k)=λS(k−1)+(1−λ)u(k)<br>
+          sustained area: A<sub>sus</sub>=(1/n)ΣS(k)<sup>2</sup><br>
+          OUT mean: D<sub>out</sub>=Σ[w(k)u(k)] / Σw(k), &nbsp; w(k)=progress(k)<sup>c</sup><br>
+          final score=100×[(1−s)D<sub>out</sub>+s·A<sub>sus</sub>]
+        </div>
+        <div id="horizon" class="tiny" style="margin-top:6px">Tail floor: 0.10 persists through all existing tail marbles</div>
+        <div id="persistenceInfo" class="tiny" style="margin-top:3px">Persistence half-life: 6.6 marble steps</div>
+        <div class="tiny" style="margin-top:5px">Tail blockers use a nested-chain model: when several uncertain tail marbles obstruct one target, the largest p(x) is used rather than treating them as independent probabilities.</div>
+        <div id="errorBox" class="errorBox"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead">
+        <strong>Loaded stages / ranking</strong><span id="stageCount" class="tiny">0 stages</span>
+        <div class="filters">
+          <label>Family <select id="familyFilter"><option value="__all">All</option></select></label>
+          <label>Flip <select id="flipFilter"><option value="__all">All</option><option value="normal">Normal</option><option value="flipped">Flipped</option><option value="unknown">Unknown</option></select></label>
+        </div>
+      </div>
+      <div class="panelBody">
+        <div class="tiny" style="margin-bottom:7px">Canonical rank is always 1 = easiest, N = hardest. Table sorting and filters do not change exported ranks.</div>
+        <div id="rankingWrap" class="tableWrap"><div class="empty">Load one or more StageSpec v1/v2 JSON files.</div></div>
+      </div>
+    </section>
+  </div>
+</main>
+<script>
+'use strict';
+const W=1280,H=720;
+const DEFAULT_R=20,DEFAULT_SPACING=40.5;
+const TRACK_OUTER_WIDTH=58,TRACK_MID_WIDTH=51,TRACK_INNER_WIDTH=43;
+const PROJECTILE_R=18;
+const HIT_R=DEFAULT_R+PROJECTILE_R-2; // matches game: BALL_R + p.r - 2
+const SHOOTER_Y=674,PROJECTILE_START_Y=SHOOTER_Y-43;
+const CROSSING_OCCLUSION_HALF_LENGTH=DEFAULT_SPACING*1.65;
+const CROSSING_COMPOSITE_RADIUS=TRACK_OUTER_WIDTH*1.02;
+const CROSSING_OVERDRAW_HALF_LENGTH=CROSSING_COMPOSITE_RADIUS+TRACK_OUTER_WIDTH*1.25;
+const $=id=>document.getElementById(id);
+const canvas=$('preview'),ctx=canvas.getContext('2d');
+let stages=[];
+let selectedId=null;
+let sortKey='rank',sortDir=1;
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function finite(v){return typeof v==='number'&&Number.isFinite(v)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function buildTrack(points){
+  const pts=points.map(p=>({x:+p.x,y:+p.y})),cum=[0];
+  for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));
+  return{pts,cum,length:cum[cum.length-1]};
+}
+function trackPos(track,s){
+  s=clamp(s,0,track.length);let lo=0,hi=track.cum.length-1;
+  while(lo+1<hi){const mid=(lo+hi)>>1;if(track.cum[mid]<s)lo=mid;else hi=mid}
+  const a=track.pts[lo],b=track.pts[hi],span=Math.max(1e-9,track.cum[hi]-track.cum[lo]),t=(s-track.cum[lo])/span;
+  return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+}
+function validateStageSpec(spec,name='StageSpec'){
+  if(!spec||typeof spec!=='object'||spec.format!=='marble-popper-stage'||![1,2].includes(spec.schemaVersion))throw new Error(`${name}: unsupported format; expected marble-popper-stage v1 or v2.`);
+  const v2=spec.schemaVersion===2;
+  const space=v2?spec.coordinateSystem:spec.canvas;
+  const compat=v2?spec.compatibility:spec.rules;
+  if(space?.width!==W||space?.height!==H)throw new Error(`${name}: coordinate system must be ${W}×${H}.`);
+  if(v2&&compat?.ruleset!=='marble-popper-core-v1')throw new Error(`${name}: unsupported compatibility.ruleset.`);
+  const r=+compat?.marbleRadius,spacing=+compat?.marbleSpacing;
+  if(!finite(r)||!finite(spacing)||r<=0||spacing<=0)throw new Error(`${name}: invalid marble geometry compatibility metadata.`);
+  const path=spec.geometry?.path;
+  if(spec.geometry?.pathEncoding!=='absolute-dense-points-v1'||!Array.isArray(path)||path.length<2)throw new Error(`${name}: invalid geometry.path.`);
+  const clean=path.map((p,i)=>{if(!p||!finite(+p.x)||!finite(+p.y))throw new Error(`${name}: bad path point ${i}.`);return{x:+p.x,y:+p.y}});
+  const track=buildTrack(clean);
+  const crossings=(Array.isArray(spec.geometry?.crossings)?spec.geometry.crossings:[]).map((c,i)=>{
+    for(const k of ['x','y','upperS','lowerS'])if(!finite(+c?.[k]))throw new Error(`${name}: crossing ${i} has invalid ${k}.`);
+    return{id:String(c.id||i+1),x:+c.x,y:+c.y,upperS:+c.upperS,lowerS:+c.lowerS};
+  });
+  const obstacles=(Array.isArray(spec.geometry?.obstacles)?spec.geometry.obstacles:[]).map((o,i)=>{
+    if(!finite(+o.x)||!finite(+o.y))throw new Error(`${name}: obstacle ${i} invalid.`);
+    if(o.type==='circle'&&finite(+o.r)&&+o.r>0)return{type:'circle',x:+o.x,y:+o.y,r:+o.r};
+    if(o.type==='rect'&&finite(+o.w)&&finite(+o.h)&&+o.w>0&&+o.h>0)return{type:'rect',x:+o.x,y:+o.y,w:+o.w,h:+o.h};
+    throw new Error(`${name}: obstacle ${i} invalid type/size.`);
+  });
+  const flipRaw=spec.source?.verticalFlip;
+  let verticalFlip=null;
+  if(typeof flipRaw==='boolean')verticalFlip=flipRaw;
+  else if(typeof flipRaw==='string'){const v=flipRaw.toLowerCase();if(['true','yes','on','flipped','flip'].includes(v))verticalFlip=true;else if(['false','no','off','normal'].includes(v))verticalFlip=false}
+  const batchIndex=finite(+spec.source?.batchIndex)?Math.trunc(+spec.source.batchIndex):null;
+  const familyCycle=finite(+spec.source?.familyCycle)?Math.trunc(+spec.source.familyCycle):null;
+  return{
+    id:String(spec.stageId||name),name:String(spec.stageId||name),fileName:name,
+    family:String(spec.source?.familyLabel||spec.source?.family||'—'),familyCode:String(spec.source?.family||''),
+    verticalFlip,batchIndex,familyCycle,seed:spec.source?.seed??null,
+    spec,track,crossings,obstacles,r,spacing,eval:null
+  };
+}
+function lowerPassOccluded(stage,s){
+  return stage.crossings.some(c=>Math.abs(s-c.lowerS)<stage.spacing*1.65);
+}
+function marbleRayEntryY(targetPos,blockPos,hitR){
+  const dx=Math.abs(blockPos.x-targetPos.x);if(dx>=hitR)return null;
+  return blockPos.y+Math.sqrt(Math.max(0,hitR*hitR-dx*dx));
+}
+function obstacleEntryY(stage,x,pad=PROJECTILE_R){
+  let best=-Infinity;
+  for(const o of stage.obstacles){
+    if(o.type==='circle'){
+      const R=o.r+pad,dx=Math.abs(x-o.x);if(dx>R)continue;
+      const y=o.y+Math.sqrt(Math.max(0,R*R-dx*dx));if(y>best)best=y;
+    }else{
+      const ax=Math.abs(x-o.x),halfW=o.w/2,halfH=o.h/2;
+      if(ax>halfW+pad)continue;
+      const dx=Math.max(ax-halfW,0);
+      const extra=dx===0?pad:Math.sqrt(Math.max(0,pad*pad-dx*dx));
+      const y=o.y+halfH+extra;if(y>best)best=y;
+    }
+  }
+  return best;
+}
+function evaluateTarget(stage,target,evalMarbles,tailMarbles,targetIndex){
+  const targetPos=target.pos;
+  if(lowerPassOccluded(stage,target.s))return{h:1,reason:'lower crossing',kind:'blocked'};
+  const targetEntry=targetPos.y+(stage.r+PROJECTILE_R-2);
+  const obstacleY=obstacleEntryY(stage,targetPos.x,PROJECTILE_R);
+  if(obstacleY>targetEntry+1e-6&&obstacleY<PROJECTILE_START_Y+1)return{h:1,reason:'obstacle',kind:'blocked'};
+
+  // Certain blockers: the other leading evaluation marbles.
+  let nearestEval=null;
+  for(let i=0;i<evalMarbles.length;i++){
+    if(i===targetIndex)continue;
+    const b=evalMarbles[i];
+    if(lowerPassOccluded(stage,b.s))continue; // projectiles pass through lower-pass marbles in the game
+    const entry=marbleRayEntryY(targetPos,b.pos,stage.r+PROJECTILE_R-2);
+    if(entry!==null&&entry>targetEntry+1e-6&&entry<PROJECTILE_START_Y+1){
+      if(!nearestEval||entry>nearestEval.entry)nearestEval={entry,index:i};
+    }
+  }
+  if(nearestEval)return{h:1,reason:`eval #${nearestEval.index+1}`,kind:'blocked'};
+
+  // Uncertain tail. p(x) is interpreted as the probability/strength that the
+  // packed chain still extends at least x marbles behind the evaluation group.
+  // These events are nested, so P(any blocking tail marble) is max p(x).
+  let best=null;
+  for(const b of tailMarbles){
+    if(b.p<=0||lowerPassOccluded(stage,b.s))continue;
+    const entry=marbleRayEntryY(targetPos,b.pos,stage.r+PROJECTILE_R-2);
+    if(entry!==null&&entry>targetEntry+1e-6&&entry<PROJECTILE_START_Y+1){
+      if(!best||b.p>best.p||(b.p===best.p&&entry>best.entry))best={p:b.p,x:b.x,entry};
+    }
+  }
+  if(best)return{h:best.p,reason:`tail x=${best.x}, p=${best.p.toFixed(2)}`,kind:best.p>=.999?'blocked':'partial'};
+  return{h:0,reason:'clear',kind:'clear'};
+}
+function stateHeadPositions(stage,a){
+  const start=(a-1)*stage.spacing;
+  if(start>stage.track.length+1e-6)return[];
+  const arr=[];let s=start;
+  while(s<stage.track.length-1e-6){arr.push(s);s+=stage.spacing}
+  if(!arr.length||Math.abs(arr[arr.length-1]-stage.track.length)>1e-5)arr.push(stage.track.length);
+  return arr;
+}
+function makeState(stage,headS,stateIndex,a,b,f){
+  const evalMarbles=[];
+  for(let j=0;j<a;j++){
+    const s=headS-j*stage.spacing;
+    evalMarbles.push({rank:j+1,s,pos:trackPos(stage.track,s)});
+  }
+  const existingTailCount=stateIndex; // state 0 has exactly a marbles, then one new tail marble per state
+  const tailMarbles=[];
+  for(let x=1;x<=existingTailCount;x++){
+    const p=Math.max(f,1-b*x);
+    const s=headS-(a-1+x)*stage.spacing;if(s<-1e-5)break;
+    tailMarbles.push({x,p,s:Math.max(0,s),pos:trackPos(stage.track,Math.max(0,s))});
+  }
+  const results=evalMarbles.map((m,i)=>evaluateTarget(stage,m,evalMarbles,tailMarbles,i));
+  const d=results.reduce((sum,r)=>sum+r.h,0);
+  return{headS,progress:stage.track.length?headS/stage.track.length:0,evalMarbles,tailMarbles,results,d,norm:d/a};
+}
+function aggregateEval(stage,a,b,f,c,lambda,sMix){
+  const heads=stateHeadPositions(stage,a);
+  if(!heads.length)return{error:`Track is too short for a=${a}.`};
+  const states=heads.map((headS,i)=>makeState(stage,headS,i,a,b,f));
+
+  // Sustained pressure is an EWMA of local difficulty. Starting from zero is
+  // deliberate: one isolated hard state should not immediately count as a
+  // sustained hard section; a run of hard states accumulates pressure.
+  let pressure=0;
+  for(const st of states){
+    pressure=lambda*pressure+(1-lambda)*st.norm;
+    st.sustained=pressure;
+  }
+
+  let wsum=0,outSum=0,uniform=0;
+  for(const st of states){
+    const w=c===0?1:Math.pow(Math.max(st.progress,1e-6),c);
+    wsum+=w;outSum+=w*st.norm;uniform+=st.norm;
+  }
+  const outMean=outSum/Math.max(1e-9,wsum);
+  const uniformMean=uniform/states.length;
+  const sustainedMax=Math.max(...states.map(st=>st.sustained));
+  // Sustained Area rewards hard pressure that persists over many states rather
+  // than a single peak. Squaring S emphasizes long red/orange sections while
+  // retaining a smooth, threshold-free metric.
+  const sustainedArea=states.reduce((sum,st)=>sum+st.sustained*st.sustained,0)/states.length;
+  const score=100*((1-sMix)*outMean+sMix*sustainedArea);
+  const uniformScore=100*uniformMean;
+  const outMeanScore=100*outMean;
+  const sustainedAreaScore=100*sustainedArea;
+  const sustainedMaxScore=100*sustainedMax;
+  const maxScore=100*Math.max(...states.map(st=>st.norm));
+  const final25=states.filter(st=>st.progress>=.75),final10=states.filter(st=>st.progress>=.90);
+  const avgNorm=xs=>xs.length?100*xs.reduce((z,st)=>z+st.norm,0)/xs.length:0;
+  let longest=0,run=0;
+  for(const st of states){if(st.norm>=.75){run++;longest=Math.max(longest,run)}else run=0}
+  return{a,b,f,c,lambda,sMix,states,score,outMeanScore,uniformScore,sustainedAreaScore,sustainedMaxScore,maxScore,final25:avgNorm(final25),final10:avgNorm(final10),criticalRun:longest*stage.spacing};
+}
+function params(){
+  const a=Math.round(+$('paramA').value),b=+$('paramB').value,f=+$('paramF').value,c=+$('paramC').value,lambda=+$('paramLambda').value,sMix=+$('paramS').value;
+  if(!Number.isFinite(a)||a<1||a>20)throw new Error('a must be an integer from 1 to 20.');
+  if(!Number.isFinite(b)||b<0||b>.25)throw new Error('b must be 0.00–0.25.');
+  if(!Number.isFinite(f)||f<0||f>1)throw new Error('f must be 0–1.');
+  if(!Number.isFinite(c)||c<0||c>8)throw new Error('c must be 0–8.');
+  if(!Number.isFinite(lambda)||lambda<0||lambda>=1)throw new Error('λ must be 0–0.995.');
+  if(!Number.isFinite(sMix)||sMix<0||sMix>1)throw new Error('s must be 0–1.');
+  return{a,b,f,c,lambda,sMix};
+}
+function updateModelInfo(){
+  const b=+$('paramB').value,f=+$('paramF').value,lambda=+$('paramLambda').value;
+  if(Number.isFinite(b)&&Number.isFinite(f)){
+    if(b>0){
+      const x=Math.max(0,Math.ceil((1-f)/b));
+      $('horizon').textContent=`Tail floor: p(x) reaches ${Math.max(0,Math.min(1,f)).toFixed(2)} at about x=${x}, then persists through all existing tail marbles`;
+    }else $('horizon').textContent='Tail occupancy: p(x)=1 for the entire existing tail (b = 0)';
+  }
+  let text='Persistence half-life: —';
+  if(Number.isFinite(lambda)){
+    if(lambda<=0)text='Persistence half-life: 0 marble steps (no memory)';
+    else if(lambda<1)text=`Persistence half-life: ${(Math.log(.5)/Math.log(lambda)).toFixed(1)} marble steps`;
+  }
+  $('persistenceInfo').textContent=text;
+}
+function canonicalCompare(a,b){
+  const ae=a.eval,be=b.eval;
+  if(ae?.error&&!be?.error)return 1;if(!ae?.error&&be?.error)return -1;if(ae?.error&&be?.error)return a.id.localeCompare(b.id);
+  const ds=(ae?.score??Infinity)-(be?.score??Infinity);if(Math.abs(ds)>1e-9)return ds;
+  const ai=a.batchIndex??Number.MAX_SAFE_INTEGER,bi=b.batchIndex??Number.MAX_SAFE_INTEGER;if(ai!==bi)return ai-bi;
+  return a.id.localeCompare(b.id);
+}
+function assignCanonicalRanks(){
+  const valid=stages.filter(st=>st.eval&&!st.eval.error).slice().sort(canonicalCompare);
+  valid.forEach((st,i)=>st.eval.rank=i+1);
+  const groups=new Map();
+  for(const st of valid){const key=st.familyCode||st.family;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(st)}
+  for(const group of groups.values())group.sort(canonicalCompare).forEach((st,i)=>{st.eval.familyRank=i+1;st.eval.familySize=group.length});
+  for(const st of stages.filter(st=>st.eval?.error)){st.eval.rank=null;st.eval.familyRank=null;st.eval.familySize=null}
+}
+function recalcAll(){
+  try{
+    const {a,b,f,c,lambda,sMix}=params();showError('');
+    for(const st of stages)st.eval=aggregateEval(st,a,b,f,c,lambda,sMix);
+    assignCanonicalRanks();updateFilters();renderRanking();renderSelected();
+  }catch(e){showError(e.message||String(e))}
+}
+function showError(msg){const el=$('errorBox');el.textContent=msg;el.style.display=msg?'block':'none'}
+
+async function loadFiles(files){
+  const errors=[],added=[];
+  for(const file of files){
+    try{
+      const parsed=JSON.parse(await file.text());
+      let specs=[];
+      if(Array.isArray(parsed))specs=parsed;
+      else if(parsed?.format==='marble-popper-stage')specs=[parsed];
+      else if(Array.isArray(parsed?.stages))specs=parsed.stages.map(x=>x?.stage??x);
+      else if(Array.isArray(parsed?.stageSpecs))specs=parsed.stageSpecs;
+      else throw new Error('JSON is neither a StageSpec nor a StageSpec array/bundle.');
+      specs.forEach((spec,i)=>added.push(validateStageSpec(spec,specs.length>1?`${file.name} [${i+1}]`:file.name)));
+    }catch(e){errors.push(`${file.name}: ${e.message||e}`)}
+  }
+  // duplicate-safe by stage id; last loaded version replaces prior one
+  for(const st of added){const ix=stages.findIndex(x=>x.id===st.id);if(ix>=0)stages[ix]=st;else stages.push(st)}
+  if(added.length&&!selectedId)selectedId=added[0].id;
+  $('recalcBtn').disabled=!stages.length;$('csvBtn').disabled=!stages.length;$('bundleBtn').disabled=!stages.length;$('stageBtn').disabled=!selectedId;
+  showError(errors.join('\n'));
+  recalcAll();
+}
+function clearAll(){stages=[];selectedId=null;$('recalcBtn').disabled=true;$('csvBtn').disabled=true;$('bundleBtn').disabled=true;$('stageBtn').disabled=true;$('familyFilter').innerHTML='<option value="__all">All</option>';$('flipFilter').value='__all';renderRanking();renderSelected();showError('')}
+
+function difficultyColor(t,alpha=1){
+  t=clamp(t,0,1);const hue=128*(1-t);return`hsla(${hue},82%,56%,${alpha})`;
+}
+function strokeTrack(points,width,color,lineCap='round'){
+  if(points.length<2)return;ctx.save();ctx.lineCap=lineCap;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();ctx.restore();
+}
+function drawBaseTrack(stage){
+  const p=stage.track.pts;strokeTrack(p,TRACK_OUTER_WIDTH,'#05080d');strokeTrack(p,TRACK_MID_WIDTH,'#26313f');strokeTrack(p,TRACK_INNER_WIDTH,'#111923');
+}
+function stateValueAtS(ev,s,mode='local'){
+  const states=ev.states;if(!states.length)return 0;
+  const val=st=>mode==='sustained'?(st.sustained??0):st.norm;
+  if(s<=states[0].headS)return val(states[0]);
+  if(s>=states[states.length-1].headS)return val(states[states.length-1]);
+  let lo=0,hi=states.length-1;while(lo+1<hi){const m=(lo+hi)>>1;if(states[m].headS<s)lo=m;else hi=m}
+  const a=states[lo],b=states[hi],t=(s-a.headS)/Math.max(1e-9,b.headS-a.headS);return val(a)+(val(b)-val(a))*t;
+}
+function drawHeatPath(stage,ev,clipCircle=null){
+  ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+  if(clipCircle){ctx.beginPath();ctx.arc(clipCircle.x,clipCircle.y,clipCircle.r,0,Math.PI*2);ctx.clip()}
+  for(let i=1;i<stage.track.pts.length;i++){
+    const a=stage.track.pts[i-1],b=stage.track.pts[i],s=(stage.track.cum[i-1]+stage.track.cum[i])/2,t=stateValueAtS(ev,s,$('heatMode').value);
+    ctx.strokeStyle=difficultyColor(t,.96);ctx.lineWidth=12;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  ctx.restore();
+}
+function trackSlice(stage,centerS,half,step=3){
+  const a=clamp(centerS-half,0,stage.track.length),b=clamp(centerS+half,0,stage.track.length),n=Math.max(2,Math.ceil((b-a)/step)),arr=[];
+  for(let i=0;i<=n;i++){const s=a+(b-a)*i/n,pt=trackPos(stage.track,s);arr.push({...pt,s})}return arr;
+}
+function drawCrossingOverlay(stage,ev){
+  for(const c of stage.crossings){
+    const center=trackPos(stage.track,c.upperS),slice=trackSlice(stage,c.upperS,CROSSING_OVERDRAW_HALF_LENGTH,3);
+    ctx.save();ctx.beginPath();ctx.arc(center.x,center.y,CROSSING_COMPOSITE_RADIUS,0,Math.PI*2);ctx.clip();
+    strokeTrack(slice,TRACK_OUTER_WIDTH,'#05080d','butt');strokeTrack(slice,TRACK_MID_WIDTH,'#26313f','butt');strokeTrack(slice,TRACK_INNER_WIDTH,'#111923','butt');
+    for(let i=1;i<slice.length;i++){const a=slice[i-1],b=slice[i],s=(a.s+b.s)/2,t=stateValueAtS(ev,s,$('heatMode').value);ctx.strokeStyle=difficultyColor(t,.96);ctx.lineWidth=12;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke()}
+    ctx.restore();
+  }
+}
+function drawObstacles(stage){
+  for(const o of stage.obstacles){ctx.save();ctx.fillStyle='#59636f';ctx.strokeStyle='#9aa6b4';ctx.lineWidth=2;if(o.type==='circle'){ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2)}else{ctx.beginPath();ctx.roundRect(o.x-o.w/2,o.y-o.h/2,o.w,o.h,10)}ctx.fill();ctx.stroke();ctx.restore()}
+}
+function drawEndpoints(stage){
+  const a=trackPos(stage.track,0),b=trackPos(stage.track,stage.track.length);ctx.save();ctx.font='12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;
+  ctx.fillStyle='#080b10';ctx.strokeStyle='#607187';ctx.beginPath();ctx.arc(a.x,a.y,22,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#aab7c8';ctx.fillText('IN',a.x,a.y);
+  ctx.fillStyle='#030507';ctx.strokeStyle='#a75252';ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,25,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#d28b8b';ctx.fillText('OUT',b.x,b.y);ctx.restore();
+}
+function drawDebugMarble(m,fill,alpha,outline=null,label=''){
+  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.strokeStyle=outline||'rgba(255,255,255,.45)';ctx.lineWidth=outline?4:2;ctx.beginPath();ctx.arc(m.pos.x,m.pos.y,DEFAULT_R,0,Math.PI*2);ctx.fill();ctx.stroke();
+  if(label){ctx.globalAlpha=1;ctx.fillStyle='#071018';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,m.pos.x,m.pos.y)}ctx.restore();
+}
+function drawStateMarbles(stage,state){
+  // Tail first; opacity directly visualizes p(x).
+  for(const m of state.tailMarbles)drawDebugMarble(m,'#91a0b1',.10+.52*m.p,null,'');
+  for(let i=state.evalMarbles.length-1;i>=0;i--){
+    const m=state.evalMarbles[i],r=state.results[i],outline=difficultyColor(r.h,1);drawDebugMarble(m,'#d9e3ee',.94,outline,String(i+1));
+  }
+}
+function renderPreview(stage){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#070b10';ctx.fillRect(0,0,W,H);
+  if(!stage||!stage.eval||stage.eval.error)return;
+  drawBaseTrack(stage);drawHeatPath(stage,stage.eval);drawCrossingOverlay(stage,stage.eval);drawObstacles(stage);
+  const idx=clamp((+$('stateSlider').value||1)-1,0,stage.eval.states.length-1),state=stage.eval.states[idx];
+  if($('showState').checked)drawStateMarbles(stage,state);
+  drawEndpoints(stage);
+}
+function selectedStage(){return stages.find(s=>s.id===selectedId)||null}
+function fmt(v,d=1){return Number.isFinite(v)?v.toFixed(d):'—'}
+function renderSelected(){
+  const st=selectedStage();
+  if(!st||!st.eval||st.eval.error){$('stageBtn').disabled=!st;$('selectedLabel').textContent=st?st.name:'No stage loaded';$('selectedStats').innerHTML='';$('stateSlider').disabled=true;$('stateLabel').textContent='State —';$('targetWrap').innerHTML='<div class="empty">Select a valid stage to inspect d(k).</div>';ctx.clearRect(0,0,W,H);ctx.fillStyle='#070b10';ctx.fillRect(0,0,W,H);return}
+  const e=st.eval;$('selectedLabel').textContent=`${st.name} · ${st.family} · rank ${e.rank??'—'}/${stages.filter(x=>x.eval&&!x.eval.error).length} · family ${e.familyRank??'—'}/${e.familySize??'—'} · ${flipLabel(st.verticalFlip)}`;
+  $('selectedStats').innerHTML=[['Difficulty',fmt(e.score)],['OUT mean',fmt(e.outMeanScore)],['Sustained area',fmt(e.sustainedAreaScore)],['Sustained max',fmt(e.sustainedMaxScore)],['Final 25%',fmt(e.final25)],['Max local',fmt(e.maxScore)]].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  $('stageBtn').disabled=false;
+  const slider=$('stateSlider');slider.disabled=false;slider.min=1;slider.max=e.states.length;slider.value=clamp(+slider.value||1,1,e.states.length);renderStateDetails(st);renderPreview(st);
+}
+function renderStateDetails(st){
+  const e=st.eval,idx=clamp((+$('stateSlider').value||1)-1,0,e.states.length-1),state=e.states[idx];
+  $('stateLabel').textContent=`State ${idx+1}/${e.states.length} · head ${(100*state.progress).toFixed(1)}% · d=${state.d.toFixed(2)}/${e.a} · S=${(100*(state.sustained??0)).toFixed(1)}`;
+  if(!$('showReasons').checked){$('targetWrap').innerHTML='<div class="empty">Target-status table hidden.</div>';return}
+  let html='<table><thead><tr><th>Target</th><th>s / track</th><th>difficulty</th><th style="text-align:left">reason</th></tr></thead><tbody>';
+  for(let i=0;i<state.evalMarbles.length;i++){
+    const m=state.evalMarbles[i],r=state.results[i],cls=r.kind==='clear'?'reason-clear':r.kind==='partial'?'reason-partial':'reason-blocked';
+    html+=`<tr><td style="text-align:left">#${i+1}</td><td>${(100*m.s/st.track.length).toFixed(1)}%</td><td>${r.h.toFixed(2)}</td><td class="${cls}" style="text-align:left">${esc(r.reason)}</td></tr>`;
+  }
+  html+='</tbody></table>';$('targetWrap').innerHTML=html;
+}
+function flipKey(v){return v===true?'flipped':v===false?'normal':'unknown'}
+function flipLabel(v){return v===true?'Flipped':v===false?'Normal':'—'}
+function updateFilters(){
+  const sel=$('familyFilter'),prev=sel.value||'__all',families=[...new Set(stages.map(st=>st.family))].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML='<option value="__all">All</option>'+families.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'__all';
+}
+function filteredStages(){
+  const family=$('familyFilter').value,flip=$('flipFilter').value;
+  return stages.filter(st=>(family==='__all'||st.family===family)&&(flip==='__all'||flipKey(st.verticalFlip)===flip));
+}
+function sortedStages(){
+  const arr=filteredStages();
+  arr.sort((a,b)=>{
+    const av=valueForSort(a,sortKey),bv=valueForSort(b,sortKey);let cmp=0;
+    if(typeof av==='string'||typeof bv==='string')cmp=String(av??'').localeCompare(String(bv??''));
+    else cmp=(av??Infinity)-(bv??Infinity);
+    if(Math.abs(cmp)<1e-12)cmp=canonicalCompare(a,b);
+    return sortDir*cmp;
+  });
+  return arr;
+}
+function canonicalStages(){return stages.filter(st=>st.eval&&!st.eval.error).slice().sort(canonicalCompare)}
+function valueForSort(st,key){const e=st.eval||{};switch(key){case'rank':return e.rank;case'familyRank':return e.familyRank;case'name':return st.name;case'family':return st.family;case'flip':return flipKey(st.verticalFlip);case'batch':return st.batchIndex??Infinity;case'score':return e.score;case'outmean':return e.outMeanScore;case'sustained':return e.sustainedAreaScore;case'sustainedMax':return e.sustainedMaxScore;case'final25':return e.final25;case'max':return e.maxScore;case'length':return st.track.length;default:return e.rank}}
+function renderRanking(){
+  const visible=filteredStages().length;
+  $('stageCount').textContent=visible===stages.length?`${stages.length} stage${stages.length===1?'':'s'}`:`${visible} / ${stages.length} stages`;
+  if(!stages.length){$('rankingWrap').innerHTML='<div class="empty">Load one or more StageSpec v1/v2 JSON files.</div>';return}
+  const arr=sortedStages();
+  if(!arr.length){$('rankingWrap').innerHTML='<div class="empty">No stages match the current filters.</div>';return}
+  const arrow=k=>sortKey===k?(sortDir<0?' ▼':' ▲'):'';
+  let html='<table><thead><tr><th data-sort="rank">Rank'+arrow('rank')+'</th><th data-sort="familyRank">Fam#'+arrow('familyRank')+'</th><th data-sort="name">Stage'+arrow('name')+'</th><th data-sort="family">Family'+arrow('family')+'</th><th data-sort="flip">Flip'+arrow('flip')+'</th><th data-sort="score">Score'+arrow('score')+'</th><th data-sort="outmean">OUT mean'+arrow('outmean')+'</th><th data-sort="sustained">SustArea'+arrow('sustained')+'</th><th data-sort="sustainedMax">SustMax'+arrow('sustainedMax')+'</th><th data-sort="final25">Final25'+arrow('final25')+'</th><th data-sort="max">Max local'+arrow('max')+'</th><th data-sort="length">Length'+arrow('length')+'</th><th data-sort="batch">Batch'+arrow('batch')+'</th></tr></thead><tbody>';
+  arr.forEach(st=>{const e=st.eval||{},sel=st.id===selectedId?' selected':'';html+=`<tr class="selectable${sel}" data-id="${esc(st.id)}"><td>${e.rank??'—'}</td><td>${e.familyRank??'—'}</td><td title="${esc(st.fileName)}">${esc(st.name)}</td><td>${esc(st.family)}</td><td>${flipLabel(st.verticalFlip)}</td><td><strong>${e.error?'ERR':fmt(e.score)}</strong></td><td>${e.error?'—':fmt(e.outMeanScore)}</td><td>${e.error?'—':fmt(e.sustainedAreaScore)}</td><td>${e.error?'—':fmt(e.sustainedMaxScore)}</td><td>${e.error?'—':fmt(e.final25)}</td><td>${e.error?'—':fmt(e.maxScore)}</td><td>${fmt(st.track.length,0)}</td><td>${st.batchIndex??'—'}</td></tr>`});
+  html+='</tbody></table>';$('rankingWrap').innerHTML=html;
+  $('rankingWrap').querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',()=>{selectedId=tr.dataset.id;renderRanking();$('stateSlider').value=1;renderSelected()}));
+  $('rankingWrap').querySelectorAll('th[data-sort]').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.sort;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='name'||k==='family'||k==='flip')?1:(k==='score'||k==='outmean'||k==='sustained'||k==='sustainedMax'||k==='final25'||k==='max'||k==='length')?-1:1}renderRanking()}));
+}
+function downloadText(text,type,filename,bom=false){
+  const parts=bom?['\ufeff',text]:[text],blob=new Blob(parts,{type}),url=URL.createObjectURL(blob),ael=document.createElement('a');ael.href=url;ael.download=filename;ael.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function evaluationMetrics(st){
+  const e=st.eval;
+  return{
+    outWeightedMean:e.outMeanScore,sustainedArea:e.sustainedAreaScore,sustainedMax:e.sustainedMaxScore,uniformMean:e.uniformScore,
+    final25Mean:e.final25,final10Mean:e.final10,maxLocal:e.maxScore,criticalRunPx:e.criticalRun,
+    trackLength:st.track.length,crossingCount:st.crossings.length,obstacleCount:st.obstacles.length,stateCount:e.states.length
+  };
+}
+function exportEvaluatedBundle(){
+  const p=params(),ranked=canonicalStages();
+  const bundle={
+    format:'marble-popper-evaluated-stage-bundle',schemaVersion:2,
+    evaluation:{
+      evaluatorVersion:'0.5',model:'front-group-accessibility-sustained-v2',metricScale:'0-100',stageSchemaPolicy:'StageSpec v1/v2 accepted; gameplay fields are ignored',
+      parameters:{a:p.a,b:p.b,tailFloor:p.f,c:p.c,lambda:p.lambda,sustainedMix:p.sMix,sustainedAreaExponent:2},
+      rankingPolicy:'difficultyScore ascending; rank 1 = easiest; ties: source.batchIndex then stageId'
+    },
+    stageCount:ranked.length,
+    stages:ranked.map(st=>({
+      rank:st.eval.rank,familyRank:st.eval.familyRank,familySize:st.eval.familySize,difficulty:st.eval.score,
+      sourceSummary:{stageSchemaVersion:st.spec.schemaVersion,family:st.family,familyCode:st.familyCode,verticalFlip:st.verticalFlip,batchIndex:st.batchIndex,familyCycle:st.familyCycle,seed:st.seed},
+      metrics:evaluationMetrics(st),stage:st.spec
+    }))
+  };
+  downloadText(JSON.stringify(bundle,null,2),'application/json;charset=utf-8',`marble_evaluated_bundle_${ranked.length}_stages.json`);
+}
+function exportSelectedStage(){
+  const st=selectedStage();if(!st)return;
+  const safe=String(st.name||'stage').replace(/[\\/:*?"<>|]+/g,'_');
+  downloadText(JSON.stringify(st.spec,null,2),'application/json;charset=utf-8',`${safe}.stagespec.json`);
+}
+function exportCSV(){
+  const {a,b,f,c,lambda,sMix}=params(),rows=[['rank','familyRank','familySize','stageId','family','verticalFlip','batchIndex','familyCycle','seed','difficultyScore','outWeightedMean','sustainedArea','sustainedMax','uniformScore','final25','final10','maxLocal','criticalRunPx','trackLength','crossings','obstacles','stateCount','a','b','tailFloor','c','lambda','sMix','sustainedAreaExponent']];
+  canonicalStages().forEach(st=>{const e=st.eval||{};rows.push([e.rank,e.familyRank,e.familySize,st.name,st.family,st.verticalFlip===null?'':st.verticalFlip,st.batchIndex??'',st.familyCycle??'',st.seed??'',e.score,e.outMeanScore,e.sustainedAreaScore,e.sustainedMaxScore,e.uniformScore,e.final25,e.final10,e.maxScore,e.criticalRun,st.track.length,st.crossings.length,st.obstacles.length,e.states?.length??'',a,b,f,c,lambda,sMix,2])});
+  const csv=rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\r\n');
+  downloadText(csv,'text/csv;charset=utf-8',`marble_difficulty_ranking_${stages.length}_stages.csv`,true);
+}
+
+$('loadBtn').addEventListener('click',()=>$('fileInput').click());
+$('fileInput').addEventListener('change',e=>{loadFiles([...e.target.files]);e.target.value='' });
+$('clearBtn').addEventListener('click',clearAll);$('recalcBtn').addEventListener('click',recalcAll);$('bundleBtn').addEventListener('click',exportEvaluatedBundle);$('csvBtn').addEventListener('click',exportCSV);$('stageBtn').addEventListener('click',exportSelectedStage);
+$('paramB').addEventListener('input',updateModelInfo);$('paramF').addEventListener('input',updateModelInfo);$('paramLambda').addEventListener('input',updateModelInfo);['paramA','paramB','paramF','paramC','paramLambda','paramS'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')recalcAll()}));
+$('stateSlider').addEventListener('input',()=>{const st=selectedStage();if(st){renderStateDetails(st);renderPreview(st)}});
+$('heatMode').addEventListener('change',()=>renderPreview(selectedStage()));$('showState').addEventListener('change',()=>renderPreview(selectedStage()));$('showReasons').addEventListener('change',()=>{const st=selectedStage();if(st)renderStateDetails(st)});$('familyFilter').addEventListener('change',renderRanking);$('flipFilter').addEventListener('change',renderRanking);
+const dz=$('dropZone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag')}));dz.addEventListener('drop',e=>loadFiles([...e.dataTransfer.files].filter(f=>f.name.toLowerCase().endsWith('.json'))));
+updateModelInfo();renderRanking();renderSelected();
+</script>
+</body>
+</html>

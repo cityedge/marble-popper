@@ -1,0 +1,105 @@
+{
+  "format": "marble-popper-distribution",
+  "schemaVersion": 1,
+  "package": "MarblePopper_v0.39",
+  "gameVersion": "0.39",
+  "builtAt": "2026-08-24T22:21:27.035163+00:00",
+  "entryPoint": "index.html",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 1611,
+      "sha256": "395fba6cd48d072a9c40d17b3bf0e833802466999a6fccacfef2d2a79f85b9cb"
+    },
+    {
+      "path": "GITHUB_RELEASE_GUIDE.md",
+      "bytes": 6895,
+      "sha256": "9183c51b3c8316aea7a6f3d8e4ed25d5af79f4ca1e14ff81bbf2b58b5bc03c28"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1065,
+      "sha256": "f03f4ef87e79a98c5116b393df84ec5e9dc46b23988f4d96799dd2cc85062695"
+    },
+    {
+      "path": "PLAY_MARBLE_POPPER.html",
+      "bytes": 190040,
+      "sha256": "54dc51ca3a1823f8fb2360362956946b0ac901d3122988ca5cd1d422f5776670"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4343,
+      "sha256": "ff8001434a6162881549e24d79251c5303c31439336780f80483117bc9b607a9"
+    },
+    {
+      "path": "README.txt",
+      "bytes": 3889,
+      "sha256": "9d158e173381550e41befe47198a046e47c9f4247b8a3821b2cf3fae117d4955"
+    },
+    {
+      "path": "TOOLS_USER_GUIDE.md",
+      "bytes": 44067,
+      "sha256": "46e8cfa64842fb9c15416068a29376730abc8aad40be5aa61c8679bf002f703f"
+    },
+    {
+      "path": "USER_GUIDE.md",
+      "bytes": 30539,
+      "sha256": "5547ba0fc99dab91a29c920fda6fd33205e7fdaee0fe3e53a995c721e74c92aa"
+    },
+    {
+      "path": "assets/audio/bgm.ogg",
+      "bytes": 493870,
+      "sha256": "bac3eb6d72a9dadc066d383011b0e5bf8ed380393bf896ee0a9a5999bea7da44"
+    },
+    {
+      "path": "assets/audio/game_over.ogg",
+      "bytes": 123046,
+      "sha256": "512e819dd297bd20f9b566e1b463c3ca584994653c0e9aeb35119b44e160d4f2"
+    },
+    {
+      "path": "assets/audio/panic_loop.ogg",
+      "bytes": 69187,
+      "sha256": "1f537971f03758615e1cc76e69be79a3b6aaccdaaa1214f93c12ea63dd1a9452"
+    },
+    {
+      "path": "assets/audio/stage_clear.ogg",
+      "bytes": 131354,
+      "sha256": "7126a807a19942481e4238cb3a66b0a1b9af3c9ec0bc991d0331c71cc05b80d2"
+    },
+    {
+      "path": "assets/background.jpg",
+      "bytes": 370248,
+      "sha256": "7d5ea41b97cc5a8332250d9b8b54e38cbe1c1a87af9e56b5d9c935977430d051"
+    },
+    {
+      "path": "assets/data/main_campaign.js",
+      "bytes": 8507734,
+      "sha256": "922d9b3826f5531395203c646cf9ba2d0cf8585e3ed5e9970618f26b722e8dd0"
+    },
+    {
+      "path": "index.html",
+      "bytes": 190040,
+      "sha256": "54dc51ca3a1823f8fb2360362956946b0ac901d3122988ca5cd1d422f5776670"
+    },
+    {
+      "path": "tools/CAMPAIGN_BUILDER.html",
+      "bytes": 71940,
+      "sha256": "53d70977127650be4cc97cca017d46b68e26e6d9ac1fef642b5ccf67bc5c2d3a"
+    },
+    {
+      "path": "tools/DIFFICULTY_EVALUATOR.html",
+      "bytes": 40117,
+      "sha256": "e266c1dbd50e4e952d033e7fb6faf9f66c453edc692a3e2577ded531ef08c56f"
+    },
+    {
+      "path": "tools/STAGE_GENERATOR.html",
+      "bytes": 79694,
+      "sha256": "67e4118922c0f226653406b1a004c008fab9ba6a90f26f70b685bb3fa1fdba21"
+    },
+    {
+      "path": "tools/presets/marble-popper-main-v5_10_tier_settings_v5.json",
+      "bytes": 7239,
+      "sha256": "dea1ff0ae69f4167196dbf52964b4862226596284ec9007108426e32d58784bc"
+    }
+  ]
+}

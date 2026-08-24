@@ -1,0 +1,3335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Marble Popper v0.39</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#050a0e; --panel:rgba(7,15,23,.91); --panel2:rgba(15,29,42,.92);
+    --text:#edf3fa; --muted:#9db0c4; --line:#31465c; --gold:#ffc34a;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif; }
+  body { display:grid; place-items:center; }
+  button,input,select { border:1px solid var(--line); background:rgba(8,17,26,.9); color:var(--text); border-radius:9px; min-height:38px; padding:0 12px; font:700 14px/1 inherit; }
+  button { cursor:pointer; transition:background .18s,border-color .18s,color .18s,transform .18s; }
+  button:hover { background:var(--panel2); border-color:#58728e; }
+  button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  button:disabled { cursor:not-allowed; opacity:.42; }
+  .app { width:min(100vw,calc(100vh * 16 / 9)); }
+  .stage-wrap {
+    position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; isolation:isolate;
+    background:#071319;
+    box-shadow:0 20px 70px rgba(0,0,0,.55);
+  }
+  .stage-wrap::before { content:''; position:absolute; inset:-2%; z-index:0; background:url('assets/background.jpg') center/cover no-repeat; filter:hue-rotate(0deg) saturate(1.04) brightness(.96); transition:filter 1s ease; }
+  .stage-wrap[data-palette="1"]::before { filter:hue-rotate(52deg) saturate(1.14) brightness(1.01); }
+  .stage-wrap[data-palette="2"]::before { filter:hue-rotate(164deg) saturate(1.24) brightness(.97); }
+  canvas { position:absolute; inset:0; z-index:1; width:100%; height:100%; display:block; touch-action:none; cursor:none; opacity:1; transition:opacity .8s ease,filter .8s ease; }
+  .screen-title canvas,.screen-setup canvas,.screen-survival canvas,.screen-settings canvas,.screen-highscores canvas,.screen-result canvas { opacity:0; filter:blur(2px); pointer-events:none; }
+  .shell-screen { position:absolute; inset:0; z-index:5; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .35s ease,visibility .35s; }
+  .shell-screen.active { opacity:1; visibility:visible; pointer-events:auto; }
+  .utility { position:absolute; z-index:9; top:3.2%; right:3.2%; display:flex; gap:8px; }
+  .utility button { min-width:46px; height:42px; padding:0 13px; border-radius:22px; background:rgba(5,12,19,.82); font-size:13px; }
+  .title-panel { position:absolute; left:3.3%; top:5.5%; bottom:5.5%; width:36%; min-width:360px; padding:5.5% 4.2% 4%; border:2px solid rgba(66,91,116,.44); border-radius:52px 92px 58px 52px; background:linear-gradient(90deg,rgba(5,13,21,.96),rgba(7,17,26,.83)); box-shadow:0 28px 70px rgba(0,0,0,.4),inset 0 0 0 7px rgba(255,255,255,.018); }
+  .game-title { margin:0 0 7%; font-size:clamp(44px,5.2vw,82px); line-height:.9; letter-spacing:.015em; color:#f2f5f8; text-shadow:0 5px 0 #8b97a3,0 12px 20px rgba(0,0,0,.55); }
+  .title-marbles { position:absolute; top:12%; right:8%; display:grid; gap:8px; }
+  .title-marble { width:clamp(24px,2.7vw,42px); aspect-ratio:1; border-radius:50%; border:2px solid rgba(255,255,255,.2); box-shadow:inset -6px -8px 10px rgba(0,0,0,.36),inset 5px 6px 8px rgba(255,255,255,.28),0 5px 10px rgba(0,0,0,.4); }
+  .title-marble.red{background:#ff5e67}.title-marble.gold{background:#ffc84a}.title-marble.blue{background:#51a7ff}
+  .title-difficulty { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:12px; margin:-1% 2% 3%; color:#8fa6bc; font-size:12px; font-weight:900; letter-spacing:.08em; }
+  .title-difficulty select { width:100%; min-width:0; color:var(--gold); border-color:rgba(255,195,74,.5); background:rgba(5,13,21,.82); }
+  .menu { display:grid; gap:1.6%; }
+  .menu-btn { position:relative; display:flex; align-items:center; width:100%; height:clamp(55px,7.2vh,72px); padding:0 7%; border:0; border-radius:38px; background:transparent; color:#a9bdd1; text-align:left; white-space:nowrap; font-size:clamp(18px,2.1vw,31px); letter-spacing:.06em; }
+  .menu-btn::before { content:'◎'; display:inline-grid; place-items:center; width:1.7em; margin-right:.5em; color:#7791aa; }
+  .menu-btn:hover,.menu-btn.primary { color:var(--gold); background:rgba(9,18,27,.72); box-shadow:inset 0 0 0 2px rgba(255,195,74,.82),0 0 20px rgba(255,183,44,.12); }
+  .menu-btn.primary::before { color:var(--gold); }
+  .continue-stage { flex:none; margin-left:auto; padding:.28em .65em; border:1px solid rgba(125,153,181,.46); border-radius:999px; color:#dce8f4; font-size:.48em; letter-spacing:.04em; }
+  .setup-panel { position:absolute; left:7%; top:8%; bottom:8%; width:48%; padding:5% 5.2%; overflow:auto; background:linear-gradient(105deg,rgba(5,13,21,.97),rgba(8,20,30,.88)); border:1px solid rgba(87,115,142,.62); border-radius:34px; box-shadow:0 26px 70px rgba(0,0,0,.45); }
+  .setup-panel h2 { margin:0 0 8px; font-size:clamp(28px,3.2vw,48px); letter-spacing:.04em; }
+  .setup-panel p { margin:0 0 24px; color:var(--muted); line-height:1.55; }
+  .setup-actions { display:flex; flex-wrap:wrap; gap:10px; margin:15px 0; }
+  .setup-actions .gold { color:#10151a; background:var(--gold); border-color:#ffd77e; }
+  .setup-actions .gold:hover { background:#ffd16c; }
+  .campaign-import { margin:13px 0 18px; padding:12px 14px; border:1px solid rgba(83,111,139,.58); border-radius:12px; background:rgba(5,13,21,.58); }
+  .campaign-import-status { display:block; color:#c7d8e8; font-size:12px; line-height:1.55; }
+  .campaign-import .setup-actions { margin:10px 0 0; }
+  .campaign-badge { margin:0 2% 1.4%; overflow:hidden; color:#aebfd1; font-size:clamp(10px,1.25vw,13px); letter-spacing:.04em; text-overflow:ellipsis; white-space:nowrap; }
+  .field { display:grid; gap:7px; margin-top:15px; color:var(--muted); font-size:12px; }
+  .field input,.field select { width:100%; }
+  #bundleNav { display:none; grid-template-columns:auto 1fr auto; gap:7px; }
+  #bundleNav select { min-width:0; }
+  #stageStatus,#stats { display:block; margin-top:13px; color:#aebed0; font-size:12px; line-height:1.5; }
+  .back-btn { position:absolute; left:3%; bottom:3%; z-index:2; background:rgba(5,12,19,.78); }
+  .game-hud { position:absolute; z-index:4; inset:0; opacity:0; pointer-events:none; transition:opacity .5s .25s; }
+  .screen-playing .game-hud { opacity:1; }
+  .hud-stage,.hud-score { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .hud-stage { left:2.2%; }
+  .hud-score { right:2.2%; }
+  .hud-accent { color:var(--gold); }
+  #pauseBtn { position:absolute; top:2.2%; right:2.2%; pointer-events:auto; width:42px; min-width:42px; height:42px; padding:0; border-radius:50%; background:rgba(4,11,18,.84); font-size:19px; }
+  .modal-screen { display:grid; place-items:center; background:rgba(2,7,12,.5); backdrop-filter:blur(5px); }
+  .modal { min-width:min(420px,84%); max-height:92%; overflow:auto; padding:36px; text-align:center; border:1px solid #405873; border-radius:24px; background:rgba(5,13,21,.96); box-shadow:0 24px 70px rgba(0,0,0,.55); }
+  .modal h2 { margin:0 0 20px; font-size:34px; }
+  .result-breakdown { margin:18px 0 22px; text-align:left; }
+  .result-row { display:grid; grid-template-columns:1fr auto; gap:20px; padding:6px 0; color:var(--muted); border-bottom:1px solid rgba(75,101,126,.22); }
+  .result-row strong { color:var(--text); font-variant-numeric:tabular-nums; }
+  .result-row.total { margin-top:8px; padding-top:11px; color:var(--text); font-size:18px; border-top:1px solid #647f9b; border-bottom:0; }
+  .result-record { color:var(--muted); font-size:12px; line-height:1.65; }
+  .modal-actions { display:grid; gap:10px; }
+  .toast { position:absolute; z-index:12; left:50%; bottom:5%; transform:translate(-50%,20px); padding:11px 18px; border:1px solid #49647f; border-radius:999px; background:rgba(5,13,21,.94); opacity:0; transition:.25s; pointer-events:none; }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
+  .settings-list { display:grid; gap:12px; margin:25px 0; }
+  .settings-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 0; border-bottom:1px solid rgba(80,105,130,.35); }
+  .save-tools { margin-top:22px; padding:15px; border:1px solid rgba(77,104,131,.5); border-radius:12px; background:rgba(5,13,21,.58); }
+  .save-tools h3 { margin:0 0 7px; color:var(--gold); font-size:14px; letter-spacing:.05em; }
+  .save-tools p { margin:0; font-size:12px; line-height:1.5; }
+  .save-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:12px; }
+  .volume-control { display:grid; grid-template-columns:minmax(130px,220px) 3.4em; align-items:center; gap:10px; width:min(280px,58%); }
+  .volume-control input { width:100%; min-height:32px; padding:0; accent-color:var(--gold); }
+  .volume-control output { color:var(--gold); text-align:right; font-variant-numeric:tabular-nums; font-weight:800; }
+  .high-score-list { display:grid; gap:5px; margin-top:20px; }
+  .high-score-filter { display:grid; grid-template-columns:auto minmax(150px,240px); align-items:center; gap:12px; margin:16px 0 4px; color:var(--muted); font-size:12px; font-weight:900; }
+  .high-score-row { display:grid; grid-template-columns:5.5em 1fr auto; gap:16px; align-items:center; min-height:38px; padding:7px 12px; border:1px solid rgba(64,88,115,.36); border-radius:9px; background:rgba(5,13,21,.58); }
+  .high-score-row .level { color:var(--gold); font-weight:900; }
+  .high-score-row .stage-name { overflow:hidden; color:var(--muted); text-overflow:ellipsis; white-space:nowrap; }
+  .high-score-row strong { min-width:7em; text-align:right; font-variant-numeric:tabular-nums; }
+  .score-section-title { margin:28px 0 4px; color:var(--gold); font-size:15px; letter-spacing:.08em; }
+  .survival-record { margin-top:14px; padding:12px 14px; border:1px solid rgba(64,88,115,.4); border-radius:10px; color:var(--muted); background:rgba(5,13,21,.58); line-height:1.55; }
+  @media(max-width:760px){ .title-panel{left:3%;top:4%;bottom:4%;width:48%;min-width:0;padding:5% 4%;border-radius:28px 50px 36px 28px}.game-title{font-size:6.5vw}.menu-btn{height:9vh;font-size:clamp(13px,2.7vw,20px)}.setup-panel{left:5%;top:7%;bottom:7%;width:65%;padding:4.5%}.utility{top:2%;right:2%}.utility button{height:34px;min-height:34px}.modal{padding:24px} }
+  @media(max-height:500px){ .title-panel{top:3%;bottom:3%;padding:3.2% 4% 2%}.game-title{font-size:38px;margin-bottom:2%}.title-marbles{display:none}.title-difficulty{margin:0 2% 1%;gap:8px}.title-difficulty select{min-height:30px}.menu{gap:0}.menu-btn{height:38px;font-size:18px}.setup-panel{top:4%;bottom:4%;padding:3.5% 4%}.setup-panel h2{font-size:30px}.setup-panel p{margin-bottom:12px}.field{margin-top:9px}.setup-actions{margin:9px 0}.utility{top:2%}.utility button{height:34px;min-height:34px}.modal{max-height:94%;padding:14px 22px}.modal h2{margin-bottom:7px;font-size:25px}.result-breakdown{margin:6px 0 8px}.result-row{padding:2px 0}.result-row.total{margin-top:3px;padding-top:5px}.result-record{line-height:1.35}.modal-actions{grid-template-columns:repeat(3,1fr);gap:7px}.modal-actions button{min-height:32px} }
+  @media(prefers-reduced-motion:reduce){ *{transition-duration:.01ms!important} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage-wrap screen-title" id="playfield" data-palette="0">
+    <canvas id="game" width="1280" height="720" aria-label="Marble Popper MVP"></canvas>
+    <input id="stageFileInput" type="file" accept=".json,application/json" hidden />
+    <input id="saveDataFileInput" type="file" accept=".json,application/json" hidden />
+
+    <div class="game-hud" aria-live="polite">
+      <div class="hud-stage"><span data-i18n="stage">STAGE</span> <span class="hud-accent" id="hudStageValue">01</span></div>
+      <div class="hud-score"><span data-i18n="score">SCORE</span> <span class="hud-accent" id="hudScoreValue">0</span></div>
+      <button id="pauseBtn" aria-label="Pause">Ⅱ</button>
+    </div>
+
+    <section class="shell-screen active" id="titleScreen" aria-label="Main menu">
+      <div class="utility">
+        <button id="languageBtn" aria-label="Language">日本語 / EN</button>
+        <button id="soundBtn" aria-label="Sound">♪</button>
+      </div>
+      <div class="title-panel">
+        <h1 class="game-title">MARBLE<br>POPPER</h1>
+        <div class="title-marbles" aria-hidden="true"><i class="title-marble red"></i><i class="title-marble gold"></i><i class="title-marble blue"></i></div>
+        <div class="campaign-badge" id="activeCampaignBadge"></div>
+        <label class="title-difficulty"><span data-i18n="difficulty">DIFFICULTY</span><select id="campaignDifficultySelect" aria-label="Campaign difficulty"><option value="EASY">EASY</option><option value="NORMAL">NORMAL</option><option value="HARD">HARD</option><option value="VERY_HARD">VERY HARD</option></select></label>
+        <nav class="menu">
+          <button class="menu-btn primary" id="newGameBtn" data-i18n="newGame">NEW GAME</button>
+          <button class="menu-btn" id="continueBtn">CONTINUE</button>
+          <button class="menu-btn" id="survivalModeBtn" data-i18n="survival">SURVIVAL</button>
+          <button class="menu-btn" id="highScoresModeBtn" data-i18n="highScores">HIGH SCORES</button>
+          <button class="menu-btn" id="stageTestModeBtn" data-i18n="stageTest">STAGE TEST</button>
+          <button class="menu-btn" id="settingsModeBtn" data-i18n="settings">SETTINGS</button>
+        </nav>
+      </div>
+    </section>
+
+    <section class="shell-screen" id="highScoresScreen" aria-label="High scores">
+      <div class="setup-panel">
+        <h2 data-i18n="highScores">HIGH SCORES</h2>
+        <h3 class="score-section-title" data-i18n="campaign">CAMPAIGN</h3>
+        <p data-i18n="campaignHighScores">Campaign stage records. Scores are recorded after a stage clear.</p>
+        <label class="high-score-filter"><span data-i18n="difficulty">DIFFICULTY</span><select id="highScoreDifficultySelect" aria-label="High-score difficulty"><option value="EASY">EASY</option><option value="NORMAL">NORMAL</option><option value="HARD">HARD</option><option value="VERY_HARD">VERY HARD</option></select></label>
+        <div class="high-score-list" id="campaignHighScoreList"></div>
+        <h3 class="score-section-title" data-i18n="survival">SURVIVAL</h3>
+        <p data-i18n="survivalHighScores">Longest survival time by stage. Score breaks a time tie.</p>
+        <div class="high-score-list" id="survivalHighScoreList"></div>
+      </div>
+      <button class="back-btn" id="highScoresBackBtn" data-i18n="back">← BACK</button>
+    </section>
+
+    <section class="shell-screen" id="survivalScreen" aria-label="Survival setup">
+      <div class="setup-panel">
+        <h2 data-i18n="survival">SURVIVAL</h2>
+        <p data-i18n="survivalDescription">Choose a stage cleared in the NORMAL campaign. Pressure rises every 20 seconds; a new color resets pressure.</p>
+        <label class="field"><span data-i18n="stage">STAGE</span><select id="survivalStageSelect" aria-label="Survival stage"></select></label>
+        <div class="survival-record" id="survivalSelectedRecord"></div>
+        <div class="setup-actions"><button class="gold" id="survivalStartBtn" data-i18n="play">PLAY</button></div>
+      </div>
+      <button class="back-btn" id="survivalBackBtn" data-i18n="back">← BACK</button>
+    </section>
+
+    <section class="shell-screen" id="setupScreen" aria-label="Stage setup">
+      <div class="setup-panel">
+        <h2 id="setupTitle">STAGE TEST</h2>
+        <p id="setupDescription"></p>
+        <div class="setup-actions">
+          <button id="loadStageBtn" data-i18n="loadData">LOAD DATA</button>
+        </div>
+        <div class="campaign-import" id="campaignImportPanel" hidden>
+          <span class="campaign-import-status" id="campaignImportStatus"></span>
+          <div class="setup-actions">
+            <button class="gold" id="useLoadedCampaignBtn" data-i18n="useAsMainCampaign">USE AS MAIN CAMPAIGN</button>
+            <button id="restoreBuiltInCampaignBtn" data-i18n="restoreBuiltInCampaign">RESTORE BUILT-IN CAMPAIGN</button>
+          </div>
+        </div>
+        <div id="bundleNav">
+          <button id="prevStageBtn" title="Previous stage">◀</button>
+          <select id="loadedStageSelect" aria-label="Loaded stage"></select>
+          <button id="nextStageBtn" title="Next stage">▶</button>
+        </div>
+        <div class="setup-actions">
+          <button class="gold" id="startGameBtn" data-i18n="play">PLAY</button>
+        </div>
+        <span id="stageStatus">Preparing campaign stages…</span>
+        <span id="stats">Seed: -</span>
+      </div>
+      <button class="back-btn" id="setupBackBtn" data-i18n="back">← BACK</button>
+    </section>
+
+    <section class="shell-screen" id="settingsScreen" aria-label="Settings">
+      <div class="setup-panel">
+        <h2 data-i18n="settings">SETTINGS</h2>
+        <div class="settings-list">
+          <div class="settings-row"><span data-i18n="language">LANGUAGE</span><button id="settingsLanguageBtn">日本語 / EN</button></div>
+          <div class="settings-row"><span data-i18n="sound">AUDIO</span><button id="settingsSoundBtn">ON</button></div>
+          <label class="settings-row"><span data-i18n="masterVolume">MASTER VOLUME</span><span class="volume-control"><input id="masterVolume" type="range" min="0" max="100" step="1" /><output id="masterVolumeValue">80%</output></span></label>
+          <label class="settings-row"><span data-i18n="bgmVolume">BGM VOLUME</span><span class="volume-control"><input id="bgmVolume" type="range" min="0" max="100" step="1" /><output id="bgmVolumeValue">55%</output></span></label>
+          <label class="settings-row"><span data-i18n="sfxVolume">SE VOLUME</span><span class="volume-control"><input id="sfxVolume" type="range" min="0" max="100" step="1" /><output id="sfxVolumeValue">50%</output></span></label>
+        </div>
+        <div class="save-tools">
+          <h3 data-i18n="saveData">SAVE DATA</h3>
+          <p data-i18n="saveDataHelp">Export or merge campaign progress, high scores, and Survival records. Audio settings are not included.</p>
+          <div class="save-actions">
+            <button id="exportSaveDataBtn" data-i18n="exportSaveData">EXPORT SAVE</button>
+            <button id="importSaveDataBtn" data-i18n="importSaveData">IMPORT SAVE</button>
+          </div>
+        </div>
+      </div>
+      <button class="back-btn" id="settingsBackBtn" data-i18n="back">← BACK</button>
+    </section>
+
+    <section class="shell-screen modal-screen" id="pauseScreen" aria-label="Paused">
+      <div class="modal"><h2 data-i18n="paused">PAUSED</h2><div class="modal-actions">
+        <button id="resumeBtn" data-i18n="resume">RESUME</button>
+        <button id="restartBtn" data-i18n="restart">RESTART</button>
+        <button id="stageSelectBtn" data-i18n="stageSelect">STAGE SELECT</button>
+        <button id="titleBtn" data-i18n="title">TITLE</button>
+      </div></div>
+    </section>
+
+    <section class="shell-screen modal-screen" id="resultScreen" aria-label="Stage result">
+      <div class="modal"><h2 id="resultTitle">STAGE CLEAR</h2><div id="resultStats"></div><div class="modal-actions">
+        <button id="resultReplayBtn" data-i18n="replay">PLAY AGAIN</button>
+        <button id="resultSelectBtn" data-i18n="stageSelect">STAGE SELECT</button>
+        <button id="resultTitleBtn" data-i18n="title">TITLE</button>
+      </div></div>
+    </section>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+</div>
+<script src="assets/data/main_campaign.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const statsEl = document.getElementById('stats');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const soundBtn = document.getElementById('soundBtn');
+  const masterVolumeInput = document.getElementById('masterVolume');
+  const bgmVolumeInput = document.getElementById('bgmVolume');
+  const sfxVolumeInput = document.getElementById('sfxVolume');
+  const stageFileInput = document.getElementById('stageFileInput');
+  const saveDataFileInput = document.getElementById('saveDataFileInput');
+  const loadStageBtn = document.getElementById('loadStageBtn');
+  const campaignImportPanel = document.getElementById('campaignImportPanel');
+  const campaignImportStatus = document.getElementById('campaignImportStatus');
+  const useLoadedCampaignBtn = document.getElementById('useLoadedCampaignBtn');
+  const restoreBuiltInCampaignBtn = document.getElementById('restoreBuiltInCampaignBtn');
+  const activeCampaignBadge = document.getElementById('activeCampaignBadge');
+  const stageStatus = document.getElementById('stageStatus');
+  const bundleNav = document.getElementById('bundleNav');
+  const loadedStageSelect = document.getElementById('loadedStageSelect');
+  const prevStageBtn = document.getElementById('prevStageBtn');
+  const nextStageBtn = document.getElementById('nextStageBtn');
+  const playfield = document.getElementById('playfield');
+  const titleScreen = document.getElementById('titleScreen');
+  const setupScreen = document.getElementById('setupScreen');
+  const settingsScreen = document.getElementById('settingsScreen');
+  const highScoresScreen = document.getElementById('highScoresScreen');
+  const survivalScreen = document.getElementById('survivalScreen');
+  const pauseScreen = document.getElementById('pauseScreen');
+  const resultScreen = document.getElementById('resultScreen');
+  const setupTitle = document.getElementById('setupTitle');
+  const setupDescription = document.getElementById('setupDescription');
+  const hudStageValue = document.getElementById('hudStageValue');
+  const hudScoreValue = document.getElementById('hudScoreValue');
+  const toastEl = document.getElementById('toast');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const continueBtn = document.getElementById('continueBtn');
+  const campaignDifficultySelect = document.getElementById('campaignDifficultySelect');
+  const highScoreDifficultySelect = document.getElementById('highScoreDifficultySelect');
+  const campaignHighScoreList = document.getElementById('campaignHighScoreList');
+  const survivalHighScoreList = document.getElementById('survivalHighScoreList');
+  const survivalStageSelect = document.getElementById('survivalStageSelect');
+  const survivalSelectedRecord = document.getElementById('survivalSelectedRecord');
+  const stageSelectBtn = document.getElementById('stageSelectBtn');
+  const resultReplayBtn = document.getElementById('resultReplayBtn');
+  const resultSelectBtn = document.getElementById('resultSelectBtn');
+
+  const W = canvas.width, H = canvas.height;
+  // Deliberately large, tightly packed marbles. The track should feel crowded.
+  const BALL_R = 20;
+  const BALL_SPACING = 40.5;
+  const TRACK_OUTER_WIDTH = 58;
+  const TRACK_MID_WIDTH = 51;
+  const TRACK_INNER_WIDTH = 43;
+  const CROSSING_OCCLUSION_HALF_LENGTH = BALL_SPACING * 1.65;
+  // The visual overpass is composited only in a small neighborhood around the
+  // actual crossing.  The upper lane itself is drawn well beyond this region,
+  // but a circular clip hides the stroke ends completely, so no separate
+  // bridge/plate endpoints can ever become visible.
+  const CROSSING_COMPOSITE_RADIUS = TRACK_OUTER_WIDTH * 1.02;
+  const CROSSING_OVERDRAW_HALF_LENGTH = CROSSING_COMPOSITE_RADIUS + TRACK_OUTER_WIDTH * 1.25;
+  const CROSSING_MARBLE_LAYER_PAD = BALL_R + 5;
+
+  // v0.5: normal stage progression is deliberately about twice as fast as v0.4.
+  // This is the new reference speed for later tuning.
+  const DEFAULT_BASE_SPEED = 108;
+
+  // Magnetic attraction has a much higher ceiling, but takes deliberately longer
+  // to reach it. With these values the ramp lasts ~0.60 s, so short gaps often
+  // reconnect while still accelerating: the pull visibly gets stronger as it closes.
+  const RETRACT_MAX_SPEED = 310;
+  const RETRACT_ACCEL = 520;
+
+  // Projectile motion was already reading well in v0.4, so its heavy launch ramp
+  // is retained while the chain itself becomes faster.
+  const PROJECTILE_MAX_SPEED = 900;
+  const PROJECTILE_ACCEL = 9800;
+  const PROJECTILE_START_SPEED = 70;
+  const INSERT_PUSH_SPEED = 420;
+  const FIRE_COOLDOWN = 0.14;
+
+  // Visual-only spring physics. Logical marble positions never use these offsets.
+  // Impulse magnitude is calculated per event rather than using one fixed kick.
+  const MATCH_KICK_3 = 138;          // baseline impulse for a 3-clear
+  const MATCH_KICK_EXPONENT = 1.34;  // 4/5+ clears grow noticeably heavier
+  const MATCH_KICK_MAX = 340;
+  const COLLISION_KICK_SCALE = 0.78;
+  const COLLISION_KICK_MIN = 44;
+  const COLLISION_KICK_MAX = 330;
+  // A non-clearing insertion still wedges a heavy sphere into a packed train.
+  // Use projectile impact speed as a proxy for the virtual force of that wedge.
+  const INSERT_KICK_MIN = 62;
+  const INSERT_KICK_SPEED_SCALE = 0.07;
+  const INSERT_KICK_MAX = 124;
+  const VISUAL_SPRING = 185;
+  const VISUAL_DAMPING = 20;
+
+  // ---------- Power Up / Power Down prototype ----------
+  // Positive specials are generated as a reward for every magnetic chain clear.
+  // Negative specials are attached probabilistically to the inserted B in an
+  // A-B-A split shot: shooting a different color into the middle of matching
+  // neighbors.  Both kinds activate ONLY when their marble is removed by a
+  // COLOR MATCH.  Direct destruction by another special effect never activates it.
+  const POWERDOWN_CHANCE = 0.35;
+  const BOMB_RADIUS = BALL_SPACING * 3.25;
+
+  const BACK_DURATION = 3.2;
+  const SLOW_DURATION = 5.0;
+  const SHOT_FAST_DURATION = 7.0;
+  const DRIVE_FAST_DURATION = 4.5;
+  const SHOT_SLOW_DURATION = 6.0;
+
+  const SLOW_MULT = 0.42;
+  const DRIVE_FAST_MULT = 1.65;
+  const SHOT_FAST_MULT = 1.75;
+  const SHOT_SLOW_MULT = 0.55;
+
+  // COLOR WIPE is deliberately rarer in the positive pool because it is the
+  // strongest board-changing effect.  BOMB is duplicated to make it common.
+  const POWERUP_POOL = ['bomb','bomb','back','slow','shotFast','colorWipe'];
+  const POWERDOWN_POOL = ['driveFast','shotSlow'];
+  const SPECIAL_META = {
+    bomb:      {label:'BOMB',       icon:'✹',  polarity:'up'},
+    colorWipe: {label:'WIPE',       icon:'W',  polarity:'up'},
+    back:      {label:'BACK',       icon:'↶',  polarity:'up'},
+    slow:      {label:'SLOW',       icon:'S',  polarity:'up'},
+    shotFast:  {label:'SHOT FAST',  icon:'F+', polarity:'up'},
+    driveFast: {label:'DRIVE FAST', icon:'D+', polarity:'down'},
+    shotSlow:  {label:'SHOT SLOW',  icon:'F−', polarity:'down'}
+  };
+
+  const DEFAULT_TOTAL_BALLS = 240;
+  const DEFAULT_QUEUE_PROFILE = {
+    id:'physical-runs-default-v2',
+    runLengthWeights:[12,26,40,22],
+    longRunTailScale:1,
+    singletonStreakLimit:2,
+    singletonOverflowChance:.1
+  };
+  const DEFAULT_WAVE_PROFILE = {enabled:true,waveSize:20,waveInterval:5,entryPaddingMarbles:1.5,deploymentSpeed:680,emptyBoardInterval:1.25};
+  const LEGACY_WAVE_PROFILE = {enabled:false,waveSize:0,waveInterval:0,entryPaddingMarbles:0,deploymentSpeed:0,emptyBoardInterval:0};
+  const COLORS = [
+    {name:'red',   fill:'#ff5e67', edge:'#7b2028', hi:'#ffd2d6'},
+    {name:'blue',  fill:'#51a7ff', edge:'#174a7f', hi:'#d7ebff'},
+    {name:'gold',  fill:'#ffc84a', edge:'#7b5610', hi:'#fff0b8'},
+    {name:'green', fill:'#5bd58a', edge:'#1d6d40', hi:'#d9ffe7'},
+    {name:'purple',fill:'#b77cff', edge:'#55307f', hi:'#eadbff'}
+  ];
+  const SCORE_RULES={
+    colorMarble:100,effectMarble:35,specialActivate:100,
+    streakStart:5,streakBase:250,streakStep:50,
+    magneticChain:[0,0,300,700,1200,1800,2500],
+    gapBase:[0,500,1250,2250],gapNarrowThreshold:112,gapVeryNarrowThreshold:88,
+    safetyUnit:10,waveClearPerSecond:500
+  };
+  const CAMPAIGN_DIFFICULTIES={
+    EASY:{shot:1.2,drive:.95,nonContinuity:.95},
+    NORMAL:{shot:1,drive:1,nonContinuity:1},
+    HARD:{shot:.95,drive:1.05,nonContinuity:1.2},
+    VERY_HARD:{shot:.95,drive:1.15,nonContinuity:1.4}
+  };
+  const SURVIVAL_RECORD_VERSION=1;
+  const SURVIVAL_RULES={driveFactor:1.04,shotFactor:.98,nonContinuityFactor:1.05,waveIntervalStep:.2,waveIntervalFloor:3.5,waveSizeStep:1,waveSizeCapAdd:20};
+
+  let rng = Math.random;
+  let seed = 0;
+  let stageBaseSpeed = DEFAULT_BASE_SPEED;
+  let stageProjectileSpeedScale = 1;
+  let stageTotalBalls = DEFAULT_TOTAL_BALLS;
+  let activeColorCount = 4;
+  let stageQueueProfile = {...DEFAULT_QUEUE_PROFILE,runLengthWeights:[...DEFAULT_QUEUE_PROFILE.runLengthWeights]};
+  let stageWaveProfile = {...DEFAULT_WAVE_PROFILE};
+  let activeStageSpec = null;
+  let activeStageName = 'built-in';
+  let loadedStageEntries = [];
+  let loadedStageIndex = -1;
+  let loadedContainerName = '';
+  let activeStageMeta = null;
+  let stageCrossings = [];
+  let stageObstacles = [];
+  let segments = [];
+  let spawnQueue = [];
+  let waveState = {phase:'idle',waveIndex:0,totalWaves:0,remaining:0,timer:0,connected:false,rumbleStarted:false,preExistingIds:new Set()};
+  let projectiles = [];
+  let currentColor = 0;
+  let nextColor = 1;
+  let shooterX = W * .5;
+  let aimX = W * .5, aimY = H * .5, aimVisible = false;
+  let fireCooldown = 0;
+  let paused = false;
+  let gameOver = false;
+  let cleared = false;
+  let clearPending = false;
+  let shots = 0;
+  let swaps = 0;
+  let removed = 0;
+  let chains = 0;
+  let maxChain = 0;
+  let chainDepth = 0;
+  let lastTime = performance.now();
+  let flashText = '';
+  let flashTimer = 0;
+  let matchBursts = [];
+  let smokeEffects = [];
+  let specialNotices = [];
+  let shooterRecoil = 0;
+  let shooterRecoilV = 0;
+  let nextMarbleId = 1;
+  let effectTimers = {back:0, slow:0, shotFast:0, driveFast:0, shotSlow:0};
+  let shellScreen='title', setupMode='stage-test', uiLanguage='en', toastTimer=0;
+  let scoreState=null,scorePopups=[],displayScore=0,nextShotId=1,shotRecords=new Map();
+  let safetyOriginS=null,safetySequence=null,outPulse=0,resultShown=false,waveClearBonus=null,waveClearOriginS=null;
+  const SAVE_KEY='marble-popper-save-v1',SAVE_VERSION=1,SCORE_VERSION=2;
+  const builtInCampaignRoot=window.MARBLE_POPPER_MAIN_CAMPAIGN||null;
+  let mainCampaignRoot=builtInCampaignRoot;
+  let mainCampaignId=mainCampaignRoot?.campaignId||'marble-popper-main-v1';
+  let mainCampaignSaveId=mainCampaignId,isCustomMainCampaign=false,loadedCampaignCandidate=null;
+  let mainCampaignEntries=[];
+  let activeGameMode='stage-test';
+  let campaignResultLevelIndex=-1,campaignResultNextIndex=-1,campaignResultWasHighScore=false;
+  let survivalState=null,survivalSelectedIndex=0,survivalResultWasRecord=false;
+  let saveData=loadSaveData();
+  let activeCampaignDifficulty=normalizeCampaignDifficulty(saveData.selectedCampaignDifficulty);
+
+  const UI_TEXT={
+    en:{campaign:'CAMPAIGN',difficulty:'DIFFICULTY',newGame:'NEW GAME',continueGame:'CONTINUE',highScores:'HIGH SCORES',campaignHighScores:'Campaign stage records by difficulty. Scores are recorded after a stage clear.',survival:'SURVIVAL',survivalHighScores:'Longest survival time by stage. Score breaks a time tie.',survivalDescription:'Choose a stage cleared in the NORMAL campaign. Pressure rises every 15–24 seconds by tier; items 9 and 18 add a color when possible.',survivalNoRecord:'NO RECORD',survivalTime:'SURVIVAL TIME',survivalBest:'BEST',stageTest:'STAGE TEST',settings:'SETTINGS',loadData:'LOAD DATA',builtIn:'BUILT-IN CAMPAIGN',useAsMainCampaign:'USE AS MAIN CAMPAIGN',restoreBuiltInCampaign:'RESTORE BUILT-IN CAMPAIGN',saveData:'SAVE DATA',saveDataHelp:'Export or merge campaign progress, high scores, and Survival records. Audio settings are not included.',exportSaveData:'EXPORT SAVE',importSaveData:'IMPORT SAVE',mergeSaveConfirm:'Merge this save with current records? Higher progress and records will be kept.',saveExported:'Save data exported',saveImported:'Save data imported',play:'PLAY',back:'← BACK',language:'LANGUAGE',sound:'AUDIO',masterVolume:'MASTER VOLUME',bgmVolume:'BGM VOLUME',sfxVolume:'SE VOLUME',paused:'PAUSED',resume:'RESUME',restart:'RESTART',stageSelect:'STAGE SELECT',title:'TITLE',replay:'PLAY AGAIN',retry:'RETRY',nextStage:'NEXT STAGE',newHighScore:'NEW HIGH SCORE',campaignComplete:'CAMPAIGN COMPLETE',stage:'STAGE',score:'SCORE',campaignDescription:'Play the active campaign in order. Progress and each stage high score are saved separately by difficulty.',stageTestDescription:'Choose any stage from the active campaign, or load a StageSpec, bundle, evaluated bundle, or v5 campaign for testing. Each play uses a new random run.'},
+    ja:{campaign:'キャンペーン',difficulty:'難易度',newGame:'ニューゲーム',continueGame:'コンティニュー',highScores:'ハイスコア',campaignHighScores:'難易度別のメインゲーム面別記録です。スコアはステージクリア時に記録されます。',survival:'サバイバル',survivalHighScores:'ステージ別の最長生存時間です。同時間の場合はスコアで順位を決めます。',survivalDescription:'NORMALキャンペーンでクリアしたステージを選びます。ティア別に15～24秒ごとに圧力が上がり、9・18個目は可能なら色数が増えます。',survivalNoRecord:'記録なし',survivalTime:'生存時間',survivalBest:'ベスト',stageTest:'ステージテスト',settings:'設定',loadData:'データを読み込む',builtIn:'内蔵キャンペーン',useAsMainCampaign:'メインキャンペーンとして使用',restoreBuiltInCampaign:'内蔵キャンペーンに戻す',saveData:'セーブデータ',saveDataHelp:'キャンペーン進行、ハイスコア、サバイバル記録を書き出し、または現在の記録へ統合します。音量設定は含みません。',exportSaveData:'セーブを書き出す',importSaveData:'セーブを読み込む',mergeSaveConfirm:'このセーブを現在の記録へ統合しますか？進行度と記録は高い方を残します。',saveExported:'セーブデータを書き出しました',saveImported:'セーブデータを読み込みました',play:'プレイ',back:'← 戻る',language:'言語',sound:'音声',masterVolume:'マスター音量',bgmVolume:'BGM音量',sfxVolume:'SE音量',paused:'一時停止',resume:'再開',restart:'やり直す',stageSelect:'ステージ選択',title:'タイトル',replay:'もう一度',retry:'リトライ',nextStage:'次のステージ',newHighScore:'ハイスコア更新',campaignComplete:'キャンペーンクリア',stage:'ステージ',score:'スコア',campaignDescription:'現在のキャンペーンを順番に攻略します。進行状況と面別ハイスコアは難易度ごとに保存されます。',stageTestDescription:'現在のキャンペーンから任意のステージを選ぶか、StageSpec、各種バンドル、v5キャンペーンを読み込んでテストできます。プレイごとに新しい乱数を使います。'}
+  };
+
+  function normalizeCampaignDifficulty(value){return Object.hasOwn(CAMPAIGN_DIFFICULTIES,value)?value:'NORMAL'}
+  function difficultyLabel(value=activeCampaignDifficulty){return value==='VERY_HARD'?'VERY HARD':value}
+  function difficultyConfig(){return CAMPAIGN_DIFFICULTIES[activeGameMode==='campaign'?activeCampaignDifficulty:'NORMAL']}
+  function defaultSaveData(){return{saveVersion:SAVE_VERSION,selectedCampaignDifficulty:'NORMAL',campaigns:{},survival:{records:{}}}}
+  function loadSaveData(){
+    try{
+      const parsed=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+      if(!parsed||parsed.saveVersion!==SAVE_VERSION||typeof parsed.campaigns!=='object'||Array.isArray(parsed.campaigns))return defaultSaveData();
+      if(!parsed.survival||typeof parsed.survival!=='object'||Array.isArray(parsed.survival))parsed.survival={records:{}};
+      if(!parsed.survival.records||typeof parsed.survival.records!=='object'||Array.isArray(parsed.survival.records))parsed.survival.records={};
+      parsed.selectedCampaignDifficulty=normalizeCampaignDifficulty(parsed.selectedCampaignDifficulty);
+      return parsed;
+    }catch{return defaultSaveData()}
+  }
+  function saveGameData(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(saveData));return true}catch{return false}}
+  function plainObject(value){return !!value&&typeof value==='object'&&!Array.isArray(value)}
+  function safeSaveKey(value){return typeof value==='string'&&value.length>0&&value.length<=512&&!['__proto__','prototype','constructor'].includes(value)}
+  function sanitizeSaveDataPayload(raw){
+    if(!plainObject(raw)||raw.saveVersion!==SAVE_VERSION)throw new Error(`Unsupported game saveVersion. Expected ${SAVE_VERSION}.`);
+    const clean=defaultSaveData();clean.selectedCampaignDifficulty=normalizeCampaignDifficulty(raw.selectedCampaignDifficulty);
+    if(!plainObject(raw.campaigns))throw new Error('Save data campaigns must be an object.');
+    for(const [campaignKey,source] of Object.entries(raw.campaigns)){
+      if(!safeSaveKey(campaignKey)||!plainObject(source))continue;
+      const state={run:{started:false,currentLevelId:null,currentLevelNumber:0,completed:false},unlockedLevelIds:[],records:{}};
+      if(plainObject(source.run)){
+        const levelId=safeSaveKey(source.run.currentLevelId)?source.run.currentLevelId:null,levelNumber=Math.max(0,Math.floor(Number(source.run.currentLevelNumber)||0));
+        state.run={started:!!source.run.started,currentLevelId:levelId,currentLevelNumber:levelNumber,completed:!!source.run.completed};
+      }
+      if(Array.isArray(source.unlockedLevelIds))state.unlockedLevelIds=[...new Set(source.unlockedLevelIds.filter(safeSaveKey))];
+      if(plainObject(source.records))for(const [levelId,record] of Object.entries(source.records)){
+        const score=Number(record?.bestClearScore);
+        if(safeSaveKey(levelId)&&record?.scoreVersion===SCORE_VERSION&&Number.isFinite(score)&&score>=0)state.records[levelId]={bestClearScore:Math.round(score),scoreVersion:SCORE_VERSION};
+      }
+      clean.campaigns[campaignKey]=state;
+    }
+    if(plainObject(raw.survival)&&plainObject(raw.survival.records))for(const [recordKey,record] of Object.entries(raw.survival.records)){
+      const bestTime=Number(record?.bestTime),bestScore=Number(record?.bestScore);
+      if(safeSaveKey(recordKey)&&record?.recordVersion===SURVIVAL_RECORD_VERSION&&Number.isFinite(bestTime)&&bestTime>=0&&Number.isFinite(bestScore)&&bestScore>=0)clean.survival.records[recordKey]={recordVersion:SURVIVAL_RECORD_VERSION,bestTime,bestScore:Math.round(bestScore)};
+    }
+    return clean;
+  }
+  function buildPlayerSaveEnvelope(){
+    return{format:'marble-popper-player-save',schemaVersion:1,createdAt:new Date().toISOString(),gameSaveVersion:SAVE_VERSION,scoreVersion:SCORE_VERSION,data:sanitizeSaveDataPayload(saveData)};
+  }
+  function parsePlayerSaveEnvelope(root){
+    if(!plainObject(root)||root.format!=='marble-popper-player-save'||root.schemaVersion!==1||root.gameSaveVersion!==SAVE_VERSION||root.scoreVersion!==SCORE_VERSION)throw new Error('Unsupported Marble Popper player-save file.');
+    return sanitizeSaveDataPayload(root.data);
+  }
+  function runProgressRank(run){return run?.completed?Number.MAX_SAFE_INTEGER:(run?.started?Math.max(0,Number(run.currentLevelNumber)||0):0)}
+  function mergePlayerSaveData(imported){
+    const previousSaveData=saveData,previousDifficulty=activeCampaignDifficulty,current=sanitizeSaveDataPayload(saveData),incoming=sanitizeSaveDataPayload(imported);let campaignRecords=0,survivalRecords=0;
+    current.selectedCampaignDifficulty=incoming.selectedCampaignDifficulty;
+    for(const [campaignKey,source] of Object.entries(incoming.campaigns)){
+      if(!current.campaigns[campaignKey])current.campaigns[campaignKey]={run:{started:false,currentLevelId:null,currentLevelNumber:0,completed:false},unlockedLevelIds:[],records:{}};
+      const target=current.campaigns[campaignKey];
+      if(runProgressRank(source.run)>runProgressRank(target.run))target.run={...source.run};
+      target.unlockedLevelIds=[...new Set([...target.unlockedLevelIds,...source.unlockedLevelIds])];
+      for(const [levelId,record] of Object.entries(source.records)){
+        const previous=target.records[levelId];
+        if(!previous||record.bestClearScore>previous.bestClearScore){target.records[levelId]={...record};campaignRecords++}
+      }
+    }
+    for(const [recordKey,record] of Object.entries(incoming.survival.records)){
+      const previous=current.survival.records[recordKey];
+      if(!previous||record.bestTime>previous.bestTime+.001||(Math.abs(record.bestTime-previous.bestTime)<=.001&&record.bestScore>previous.bestScore)){current.survival.records[recordKey]={...record};survivalRecords++}
+    }
+    saveData=current;activeCampaignDifficulty=normalizeCampaignDifficulty(saveData.selectedCampaignDifficulty);campaignDifficultySelect.value=activeCampaignDifficulty;highScoreDifficultySelect.value=activeCampaignDifficulty;
+    if(!saveGameData()){
+      saveData=previousSaveData;activeCampaignDifficulty=previousDifficulty;campaignDifficultySelect.value=activeCampaignDifficulty;highScoreDifficultySelect.value=activeCampaignDifficulty;
+      throw new Error('Browser storage rejected the imported save data.');
+    }
+    updateCampaignShell();if(shellScreen==='survival')renderSurvivalSetup();
+    return{campaignRecords,survivalRecords};
+  }
+  function downloadPlayerSave(){
+    const envelope=buildPlayerSaveEnvelope(),json=JSON.stringify(envelope,null,2)+'\n',blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a'),date=new Date().toISOString().slice(0,10);
+    a.href=url;a.download=`marble-popper-save-${date}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);showToast(UI_TEXT[uiLanguage].saveExported);return envelope;
+  }
+  async function readPlayerSaveFile(file){
+    try{
+      const root=JSON.parse(await file.text()),imported=parsePlayerSaveEnvelope(root);
+      if(!window.confirm(UI_TEXT[uiLanguage].mergeSaveConfirm))return false;
+      mergePlayerSaveData(imported);showToast(UI_TEXT[uiLanguage].saveImported);return true;
+    }catch(error){console.error(error);alert(`${uiLanguage==='ja'?'セーブデータを読み込めません':'Save-data import failed'}:\n${error.message||error}`);return false}
+    finally{saveDataFileInput.value=''}
+  }
+  function campaignSaveKey(difficulty=activeCampaignDifficulty){return `${mainCampaignSaveId}:${normalizeCampaignDifficulty(difficulty)}`}
+  function campaignSaveState(create=true,difficulty=activeCampaignDifficulty){
+    const normalizedDifficulty=normalizeCampaignDifficulty(difficulty),key=campaignSaveKey(normalizedDifficulty);
+    let state=saveData.campaigns[key];
+    const legacy=mainCampaignSaveId===mainCampaignId?saveData.campaigns[mainCampaignId]:null;
+    if((!state||typeof state!=='object'||Array.isArray(state))&&normalizedDifficulty==='NORMAL'&&legacy&&typeof legacy==='object'&&!Array.isArray(legacy)){
+      state=JSON.parse(JSON.stringify(legacy));saveData.campaigns[key]=state;
+    }
+    if((!state||typeof state!=='object'||Array.isArray(state))&&create){state={run:{started:false,currentLevelId:null,currentLevelNumber:1,completed:false},unlockedLevelIds:[],records:{}};saveData.campaigns[key]=state}
+    else if(!state||typeof state!=='object'||Array.isArray(state))return null;
+    if(!state)return null;
+    if(!state.run||typeof state.run!=='object')state.run={started:false,currentLevelId:null,currentLevelNumber:1,completed:false};
+    if(!Array.isArray(state.unlockedLevelIds))state.unlockedLevelIds=[];
+    if(!state.records||typeof state.records!=='object'||Array.isArray(state.records))state.records={};
+    return state;
+  }
+  function setCampaignDifficulty(value,{persist=true}={}){
+    activeCampaignDifficulty=normalizeCampaignDifficulty(value);
+    campaignDifficultySelect.value=activeCampaignDifficulty;
+    highScoreDifficultySelect.value=activeCampaignDifficulty;
+    if(persist){saveData.selectedCampaignDifficulty=activeCampaignDifficulty;saveGameData()}
+    updateCampaignShell();
+  }
+  function continueLevelIndex(){
+    const state=campaignSaveState(false);if(!state?.run?.started||state.run.completed)return-1;
+    const byId=mainCampaignEntries.findIndex(entry=>entry.meta?.levelId===state.run.currentLevelId);
+    if(byId>=0)return byId;
+    const byNumber=Math.floor(Number(state.run.currentLevelNumber))-1;
+    return byNumber>=0&&byNumber<mainCampaignEntries.length?byNumber:-1;
+  }
+  function updateCampaignShell(){
+    if(!continueBtn||!campaignHighScoreList)return;
+    const t=UI_TEXT[uiLanguage],index=continueLevelIndex();
+    const title=mainCampaignRoot?.title||mainCampaignId;
+    activeCampaignBadge.textContent=`${isCustomMainCampaign?(uiLanguage==='ja'?'カスタム':'CUSTOM'):(uiLanguage==='ja'?'内蔵':'BUILT-IN')} · ${title} · ${mainCampaignEntries.length} ${uiLanguage==='ja'?'ステージ':'STAGES'}`;
+    newGameBtn.disabled=!mainCampaignEntries.length;
+    continueBtn.disabled=index<0;
+    const label=document.createElement('span');label.textContent=t.continueGame;
+    continueBtn.replaceChildren(label);
+    if(index>=0){const stageBadge=document.createElement('small');stageBadge.className='continue-stage';stageBadge.textContent=`${difficultyLabel()} · ${t.stage} ${String(index+1).padStart(2,'0')}`;continueBtn.append(stageBadge)}
+    renderCampaignHighScores();
+    renderSurvivalHighScores();
+    renderCampaignImportControls();
+  }
+  function renderCampaignHighScores(){
+    campaignHighScoreList.replaceChildren();
+    highScoreDifficultySelect.value=activeCampaignDifficulty;
+    const records=campaignSaveState(false)?.records||{};
+    for(let i=0;i<mainCampaignEntries.length;i++){
+      const entry=mainCampaignEntries[i],stored=records[entry.meta?.levelId],record=stored?.scoreVersion===SCORE_VERSION?stored:null;
+      const row=document.createElement('div');row.className='high-score-row';
+      const level=document.createElement('span');level.className='level';level.textContent=`${UI_TEXT[uiLanguage].stage} ${String(i+1).padStart(2,'0')}`;
+      const name=document.createElement('span');name.className='stage-name';name.textContent=entry.spec?.stageId||entry.meta?.levelId||'—';
+      const scoreEl=document.createElement('strong');scoreEl.textContent=Number.isFinite(+record?.bestClearScore)?Math.round(+record.bestClearScore).toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US'):'—';
+      row.append(level,name,scoreEl);campaignHighScoreList.appendChild(row);
+    }
+  }
+  function formatDuration(seconds){
+    const whole=Math.max(0,Math.floor(Number(seconds)||0)),minutes=Math.floor(whole/60),secs=whole%60;
+    return `${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  }
+  function survivalRecordFor(index){
+    const levelId=mainCampaignEntries[index]?.meta?.levelId;
+    let record=levelId?saveData.survival.records[`${mainCampaignSaveId}:${levelId}`]:null;
+    if(!record&&mainCampaignSaveId===mainCampaignId&&levelId)record=saveData.survival.records[levelId];
+    return record?.recordVersion===SURVIVAL_RECORD_VERSION?record:null;
+  }
+  function survivalUnlockedIndices(){
+    const normalRecords=campaignSaveState(false,'NORMAL')?.records||{},indices=[];
+    for(let i=0;i<mainCampaignEntries.length;i++){
+      const levelId=mainCampaignEntries[i]?.meta?.levelId,cleared=normalRecords[levelId]?.scoreVersion===SCORE_VERSION;
+      if(i===0||cleared)indices.push(i);
+    }
+    return indices;
+  }
+  function renderSurvivalHighScores(){
+    if(!survivalHighScoreList)return;
+    survivalHighScoreList.replaceChildren();
+    for(const i of survivalUnlockedIndices()){
+      const entry=mainCampaignEntries[i],record=survivalRecordFor(i),row=document.createElement('div');row.className='high-score-row';
+      const level=document.createElement('span');level.className='level';level.textContent=`${UI_TEXT[uiLanguage].stage} ${String(i+1).padStart(2,'0')}`;
+      const name=document.createElement('span');name.className='stage-name';name.textContent=entry.spec?.stageId||entry.meta?.levelId||'—';
+      const value=document.createElement('strong');value.textContent=record?`${formatDuration(record.bestTime)} · ${Math.round(record.bestScore).toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US')}`:'—';
+      row.append(level,name,value);survivalHighScoreList.appendChild(row);
+    }
+  }
+  function renderSurvivalSetup(){
+    const unlocked=survivalUnlockedIndices();
+    if(!unlocked.includes(survivalSelectedIndex))survivalSelectedIndex=unlocked[0]??0;
+    survivalStageSelect.replaceChildren();
+    for(const i of unlocked){
+      const entry=mainCampaignEntries[i],option=document.createElement('option');option.value=String(i);option.textContent=`${UI_TEXT[uiLanguage].stage} ${String(i+1).padStart(2,'0')} · ${entry.spec?.stageId||entry.meta?.levelId||'—'}`;survivalStageSelect.appendChild(option);
+    }
+    survivalStageSelect.value=String(survivalSelectedIndex);
+    const record=survivalRecordFor(survivalSelectedIndex),t=UI_TEXT[uiLanguage];
+    survivalSelectedRecord.textContent=record?`${t.survivalBest}  ${formatDuration(record.bestTime)} · ${t.score} ${Math.round(record.bestScore).toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US')}`:t.survivalNoRecord;
+    document.getElementById('survivalStartBtn').disabled=!unlocked.length;
+  }
+  function renderCampaignImportControls(){
+    if(!campaignImportPanel)return;
+    campaignImportPanel.hidden=!loadedCampaignCandidate&&!isCustomMainCampaign;
+    useLoadedCampaignBtn.hidden=!loadedCampaignCandidate;
+    restoreBuiltInCampaignBtn.hidden=!isCustomMainCampaign;
+    const t=UI_TEXT[uiLanguage],lines=[];
+    if(loadedCampaignCandidate){
+      const root=loadedCampaignCandidate.root;
+      lines.push(`${uiLanguage==='ja'?'読込済み':'LOADED'}: ${root.title||root.campaignId} · ${loadedCampaignCandidate.entries.length} ${uiLanguage==='ja'?'ステージ':'STAGES'}`);
+    }
+    if(isCustomMainCampaign)lines.push(`${uiLanguage==='ja'?'使用中':'ACTIVE'}: ${mainCampaignRoot?.title||mainCampaignId}`);
+    else if(loadedCampaignCandidate)lines.push(`${uiLanguage==='ja'?'使用中':'ACTIVE'}: ${t.builtIn}`);
+    campaignImportStatus.textContent=lines.join('\n');
+    campaignImportStatus.style.whiteSpace='pre-line';
+  }
+
+  function hashSeed(str) {
+    let h = 2166136261 >>> 0;
+    for (let i=0;i<str.length;i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function setLanguage(lang){
+    uiLanguage=lang==='ja'?'ja':'en';
+    document.documentElement.lang=uiLanguage;
+    const t=UI_TEXT[uiLanguage];
+    document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(t[k])el.textContent=t[k]});
+    document.getElementById('languageBtn').textContent=uiLanguage==='ja'?'日本語 / EN':'日本語 / EN';
+    document.getElementById('settingsLanguageBtn').textContent=uiLanguage==='ja'?'日本語':'ENGLISH';
+    setupTitle.textContent=setupMode==='campaign'?t.campaign:t.stageTest;
+    setupDescription.textContent=setupMode==='campaign'?t.campaignDescription:t.stageTestDescription;
+    updateSoundButtons();
+    updateCampaignShell();
+    if(shellScreen==='survival')renderSurvivalSetup();
+  }
+  function toggleLanguage(){setLanguage(uiLanguage==='en'?'ja':'en')}
+  function updateSoundButtons(){
+    const enabled=!audioSettings.muted;
+    soundBtn.textContent=enabled?'♪':'♪̸';
+    soundBtn.title=enabled?(uiLanguage==='ja'?'音声オン':'Sound on'):(uiLanguage==='ja'?'ミュート中':'Sound muted');
+    document.getElementById('settingsSoundBtn').textContent=enabled?'ON':'OFF';
+    syncVolumeControls();
+  }
+  function showToast(message){
+    toastEl.textContent=message;toastEl.classList.add('show');
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2200);
+  }
+  function setShellScreen(screen){
+    shellScreen=screen;
+    playfield.className=`stage-wrap screen-${screen}`;
+    [titleScreen,setupScreen,survivalScreen,settingsScreen,highScoresScreen,pauseScreen,resultScreen].forEach(el=>el.classList.remove('active'));
+    if(screen==='title')titleScreen.classList.add('active');
+    else if(screen==='setup')setupScreen.classList.add('active');
+    else if(screen==='survival')survivalScreen.classList.add('active');
+    else if(screen==='settings')settingsScreen.classList.add('active');
+    else if(screen==='highscores')highScoresScreen.classList.add('active');
+    else if(screen==='paused')pauseScreen.classList.add('active');
+    else if(screen==='result')resultScreen.classList.add('active');
+    if(screen==='paused')stageSelectBtn.hidden=activeGameMode==='campaign';
+    lastTime=performance.now();
+  }
+  function randomRunSeed(){return((Date.now()^Math.floor(Math.random()*0xffffffff))>>>0)||1}
+  function useActiveCampaignForStageTest(index=0){
+    if(!mainCampaignEntries.length)return false;
+    loadedStageEntries=mainCampaignEntries;loadedStageIndex=Math.max(0,Math.min(mainCampaignEntries.length-1,Math.floor(index)));loadedContainerName=mainCampaignRoot?.title||mainCampaignId;loadedCampaignCandidate=null;
+    refreshBundleNav();activateLoadedStage(loadedStageIndex);renderCampaignImportControls();return true;
+  }
+  function openSetup(mode='stage-test'){
+    setupMode=mode;
+    const t=UI_TEXT[uiLanguage];
+    setupTitle.textContent=mode==='campaign'?t.campaign:t.stageTest;
+    setupDescription.textContent=mode==='campaign'?t.campaignDescription:t.stageTestDescription;
+    if(mode==='stage-test'){
+      activeGameMode='stage-test';
+      if(!loadedStageEntries.length)useActiveCampaignForStageTest(0);
+      else activateLoadedStage(loadedStageIndex>=0?loadedStageIndex:0);
+    }
+    setShellScreen('setup');
+  }
+  function startSelectedStage(){
+    activeGameMode=setupMode==='campaign'?'campaign-practice':'stage-test';ensureAudio();reset(randomRunSeed());paused=false;setShellScreen('playing');startStageMusic(true);
+  }
+  function setBackgroundPalette(index){
+    const palette=((Math.floor(Number(index)||0)%3)+3)%3;playfield.dataset.palette=String(palette);return palette;
+  }
+  function stagePaletteIndex(){
+    const level=Number.isFinite(+activeStageMeta?.campaignLevel)?+activeStageMeta.campaignLevel:(loadedStageIndex>=0?loadedStageIndex+1:1);
+    return Math.max(0,level-1)%3;
+  }
+  function survivalStepSecondsForTier(tier){return 14+Math.max(1,Math.min(10,Math.floor(Number(tier)||1)))}
+  function survivalEventLabel(key){
+    const ja=uiLanguage==='ja';
+    return({ready:ja?'開始時難度':'BASE PRESSURE',drive:ja?'チェーン速度 +4%':'CHAIN SPEED +4%',shot:ja?'ショット速度 -2%':'SHOT SPEED -2%',continuity:ja?'色の不連続性 +5%':'COLOR BREAKS +5%',interval:ja?'WAVE間隔 -0.2秒':'WAVE INTERVAL -0.2s',waveSize:ja?'WAVEサイズ +1':'WAVE SIZE +1',color:ja?'色数アップ・圧力リセット':'COLOR UP · PRESSURE RESET'})[key]||'—';
+  }
+  function openSurvivalSetup(){
+    if(!mainCampaignEntries.length){showToast(uiLanguage==='ja'?'内蔵キャンペーンを読み込めません':'Built-in campaign unavailable');return}
+    renderSurvivalSetup();setShellScreen('survival');
+  }
+  function captureSurvivalBase(index){
+    const tier=Math.max(1,Math.min(10,Math.floor(Number(activeStageMeta?.tier)||Math.floor(index/10)+1)));
+    return{
+      stageIndex:index,tier,baseSpeed:stageBaseSpeed,projectileSpeedScale:stageProjectileSpeedScale,colorCount:activeColorCount,
+      queueProfile:{...stageQueueProfile,runLengthWeights:[...stageQueueProfile.runLengthWeights]},waveProfile:{...stageWaveProfile}
+    };
+  }
+  function resetSurvivalPressure(){
+    if(!survivalState)return;
+    const base=survivalState.base;
+    stageBaseSpeed=base.baseSpeed;stageProjectileSpeedScale=base.projectileSpeedScale;
+    stageQueueProfile={...base.queueProfile,runLengthWeights:[...base.queueProfile.runLengthWeights]};
+    stageWaveProfile={...base.waveProfile};survivalState.nonContinuity=1;survivalState.deck=[];survivalState.deckCycle=0;survivalState.lastCard='';
+  }
+  function resetSurvivalRun(){
+    if(!survivalState)return;
+    activeColorCount=survivalState.base.colorCount;resetSurvivalPressure();
+    survivalState.elapsed=0;survivalState.eventIndex=0;survivalState.lastEventKey='ready';survivalState.nextEscalationAt=survivalState.stepSeconds;
+    survivalState.ammoColorCount=survivalState.base.colorCount;
+    survivalState.waveSizeCap=Math.min(80,survivalState.base.waveProfile.waveSize+SURVIVAL_RULES.waveSizeCapAdd);
+    survivalState.paletteIndex=setBackgroundPalette(stagePaletteIndex());
+  }
+  function startSurvivalLevel(index=survivalSelectedIndex){
+    const unlocked=survivalUnlockedIndices();if(!unlocked.includes(index))index=unlocked[0]??0;
+    if(!mainCampaignEntries[index])return;
+    survivalSelectedIndex=index;activeGameMode='survival';survivalState=null;
+    loadedStageEntries=mainCampaignEntries;loadedStageIndex=index;loadedContainerName=mainCampaignRoot.title||mainCampaignId;
+    activateLoadedStage(index);
+    const base=captureSurvivalBase(index);
+    survivalState={base,stepSeconds:survivalStepSecondsForTier(base.tier),elapsed:0,eventIndex:0,nextEscalationAt:0,nonContinuity:1,deck:[],deckCycle:0,lastCard:'',lastEventKey:'ready',waveSizeCap:80,ammoColorCount:activeColorCount,paletteIndex:stagePaletteIndex()};
+    reset(((Date.now()^Math.imul(index+1,0x9e3779b1))>>>0)||1);
+    ensureAudio();paused=false;setShellScreen('playing');startStageMusic(true);
+  }
+  function survivalAvailableCards(){
+    if(!survivalState)return[];
+    const b=survivalState.base,r=SURVIVAL_RULES,cards=[];
+    if(stageBaseSpeed<b.baseSpeed*2-.001)cards.push('drive');
+    if(stageProjectileSpeedScale>b.projectileSpeedScale*.7+.001)cards.push('shot');
+    if(survivalState.nonContinuity<2-.001)cards.push('continuity');
+    if(stageWaveProfile.waveInterval>r.waveIntervalFloor+.001)cards.push('interval');
+    if(stageWaveProfile.waveSize<survivalState.waveSizeCap)cards.push('waveSize');
+    return cards;
+  }
+  function refillSurvivalDeck(){
+    const cards=survivalAvailableCards();if(!cards.length)return;
+    const levelId=mainCampaignEntries[survivalState.base.stageIndex]?.meta?.levelId||String(survivalState.base.stageIndex);
+    const localRng=mulberry32(hashSeed(`${levelId}:${activeColorCount}:${survivalState.deckCycle++}`));
+    for(let i=cards.length-1;i>0;i--){const j=Math.floor(localRng()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]]}
+    if(cards.length>1&&cards[cards.length-1]===survivalState.lastCard)[cards[0],cards[cards.length-1]]=[cards[cards.length-1],cards[0]];
+    survivalState.deck=cards;
+  }
+  function applySurvivalEscalation(){
+    if(!survivalState)return;
+    if(!survivalState.deck.length)refillSurvivalDeck();
+    let card=survivalState.deck.pop();
+    while(card&&!survivalAvailableCards().includes(card))card=survivalState.deck.pop();
+    if(!card){refillSurvivalDeck();card=survivalState.deck.pop()}
+    if(!card)return false;
+    const b=survivalState.base,r=SURVIVAL_RULES,ja=uiLanguage==='ja';
+    if(card==='drive'){stageBaseSpeed=Math.min(b.baseSpeed*2,stageBaseSpeed*r.driveFactor);flashText=ja?'チェーン速度アップ':'CHAIN SPEED UP'}
+    else if(card==='shot'){stageProjectileSpeedScale=Math.max(b.projectileSpeedScale*.7,stageProjectileSpeedScale*r.shotFactor);flashText=ja?'ショット速度ダウン':'SHOT SPEED DOWN'}
+    else if(card==='continuity'){survivalState.nonContinuity=Math.min(2,survivalState.nonContinuity*r.nonContinuityFactor);flashText=ja?'色の不連続性アップ':'COLOR BREAKS UP'}
+    else if(card==='interval'){stageWaveProfile.waveInterval=Math.max(r.waveIntervalFloor,stageWaveProfile.waveInterval-r.waveIntervalStep);flashText=ja?'WAVE間隔短縮':'WAVE INTERVAL DOWN'}
+    else if(card==='waveSize'){stageWaveProfile.waveSize=Math.min(survivalState.waveSizeCap,stageWaveProfile.waveSize+r.waveSizeStep);flashText=ja?'WAVEサイズアップ':'WAVE SIZE UP'}
+    survivalState.lastCard=card;survivalState.lastEventKey=card;flashTimer=1.25;return true;
+  }
+  function applySurvivalColorLevel(){
+    const before=activeColorCount;activeColorCount=Math.min(5,activeColorCount+1);resetSurvivalPressure();
+    survivalState.lastEventKey='color';
+    flashText=uiLanguage==='ja'?`カラーレベルアップ\n${before}色 → ${activeColorCount}色\n圧力リセット`:`COLOR LEVEL UP\n${before} COLORS → ${activeColorCount} COLORS\nPRESSURE RESET`;flashTimer=2.4;
+    return true;
+  }
+  function updateSurvivalDifficulty(dt){
+    if(activeGameMode!=='survival'||!survivalState)return;
+    survivalState.elapsed+=dt;
+    while(survivalState.elapsed+1e-6>=survivalState.nextEscalationAt){
+      survivalState.eventIndex++;
+      const colorSlot=survivalState.eventIndex===9||survivalState.eventIndex===18;
+      const changed=colorSlot&&activeColorCount<5?applySurvivalColorLevel():applySurvivalEscalation();
+      if(changed)survivalState.paletteIndex=setBackgroundPalette(survivalState.paletteIndex+1);
+      survivalState.nextEscalationAt+=survivalState.stepSeconds;
+    }
+  }
+  function finalizeSurvivalRecord(){
+    survivalResultWasRecord=false;if(!survivalState)return;
+    const levelId=mainCampaignEntries[survivalState.base.stageIndex]?.meta?.levelId;if(!levelId)return;
+    const bestTime=survivalState.elapsed,bestScore=Math.round(scoreValue()),previous=survivalRecordFor(survivalState.base.stageIndex);
+    if(!previous||bestTime>Number(previous.bestTime||0)+.001||(Math.abs(bestTime-Number(previous.bestTime||0))<=.001&&bestScore>Number(previous.bestScore||0))){
+      saveData.survival.records[`${mainCampaignSaveId}:${levelId}`]={recordVersion:SURVIVAL_RECORD_VERSION,bestTime,bestScore};survivalResultWasRecord=true;saveGameData();
+    }
+    renderSurvivalHighScores();
+  }
+  window.__marblePopperSurvivalTest={
+    advance:updateSurvivalDifficulty,
+    finalize:finalizeSurvivalRecord,
+    snapshot:()=>survivalState?{
+      elapsed:survivalState.elapsed,colorCount:activeColorCount,nonContinuity:survivalState.nonContinuity,
+      ammoColorCount:survivalState.ammoColorCount,currentColor,nextColor,laneColors:laneColorPool(),
+      baseSpeed:stageBaseSpeed,projectileSpeedScale:stageProjectileSpeedScale,
+      waveSize:stageWaveProfile.waveSize,waveInterval:stageWaveProfile.waveInterval,
+      base:{...survivalState.base,waveProfile:{...survivalState.base.waveProfile}},
+      waveIndex:waveState.waveIndex,totalWaves:waveState.totalWaves,flashText,
+      stepSeconds:survivalState.stepSeconds,eventIndex:survivalState.eventIndex,lastEventKey:survivalState.lastEventKey,nextEscalationAt:survivalState.nextEscalationAt,paletteIndex:survivalState.paletteIndex,
+      waveClearBonus:waveClearBonus?{x:waveClearBonus.x,y:waveClearBonus.y,total:waveClearBonus.total}:null
+    }:null,
+    setAmmo:(current,next)=>{currentColor=current;nextColor=next},
+    drainQueue:()=>{spawnQueue=[]},
+    sanitizeAmmo:sanitizeEndgameAmmo,
+    stepForTier:survivalStepSecondsForTier,
+    setWaveClearOrigin:s=>{waveClearOriginS=s},
+    beginWaveBonus:seconds=>beginWaveClearBonus(seconds),
+    forceGameOver:()=>{gameOver=true}
+  };
+  window.__marblePopperWaveTest={
+    setScenario:scenario=>{
+      stopWaveRumble();spawnQueue=[...(scenario.spawnQueue||[])];
+      segments=(scenario.segments||[]).map(seg=>({marbles:(seg.marbles||[]).map(m=>({special:null,visualOffset:0,visualVelocity:0,color:0,...m})),driven:!!seg.driven,attracting:!!seg.attracting,attractSpeed:seg.attractSpeed||0,attractShotId:seg.attractShotId||0}));
+      const ids=segments.flatMap(seg=>seg.marbles.map(m=>m.id));nextMarbleId=Math.max(1,...ids)+1;
+      waveState={phase:scenario.phase||'deploying',waveIndex:scenario.waveIndex||1,totalWaves:Infinity,remaining:scenario.remaining||0,timer:scenario.timer||0,connected:!!scenario.connected,rumbleStarted:!!scenario.rumbleStarted,preExistingIds:new Set(scenario.preExistingIds||[])};
+    },
+    snapshot:()=>({wave:{phase:waveState.phase,waveIndex:waveState.waveIndex,remaining:waveState.remaining,connected:waveState.connected,rumbleStarted:waveState.rumbleStarted},segments:segments.map(seg=>({driven:seg.driven,attracting:seg.attracting,marbles:seg.marbles.map(m=>({id:m.id,s:m.s,waveId:m.waveId}))})),spawnQueue:[...spawnQueue],shotBlocked:shotTemporarilyBlocked()}),
+    repair:()=>repairDriveInvariant(true),
+    syncRumble:updateWaveRumbleSync,
+    stepState:updateWaveState,
+    destroyIds:ids=>{const doomed=new Set(ids);return destroyByEffect(m=>doomed.has(m.id),{kind:'test'})}
+  };
+  function returnToTitle(){paused=true;aimVisible=false;stopStageMusic(true);setShellScreen('title')}
+  function newScoreState(){return{total:0,buckets:{marbleClear:0,specialClear:0,shotStreak:0,magneticChain:0,gapShot:0,specialActivate:0,waveClearBonus:0,safetyBonus:0},successfulShots:0,failedShots:0,currentStreak:0,maxStreak:0,gapShots:0,maxGaps:0}}
+  function addScore(bucket,points,{x=W/2,y=H/2,label='',tone='normal',small=false,show=true}={}){
+    points=Math.max(0,Math.round(points));if(!points)return;
+    scoreState.total+=points;scoreState.buckets[bucket]=(scoreState.buckets[bucket]||0)+points;
+    if(show)scorePopups.push({x,y,text:label||`+${points}`,age:0,duration:small?.78:1.1,tone,small});
+  }
+  function scoreValue(){return scoreState?.total||0}
+  function chainAward(depth){const a=SCORE_RULES.magneticChain;return a[Math.min(depth,a.length-1)]+Math.max(0,depth-a.length+1)*900}
+  function shotRecord(id){return id?shotRecords.get(id):null}
+  function markShotSuccess(id,x,y){
+    const r=shotRecord(id);if(!r||r.resolved)return;
+    r.resolved=true;r.success=true;scoreState.successfulShots++;scoreState.currentStreak++;scoreState.maxStreak=Math.max(scoreState.maxStreak,scoreState.currentStreak);
+    if(scoreState.currentStreak>=SCORE_RULES.streakStart){const p=SCORE_RULES.streakBase+(scoreState.currentStreak-SCORE_RULES.streakStart)*SCORE_RULES.streakStep;addScore('shotStreak',p,{x,y:y-24,label:`STREAK ${scoreState.currentStreak}  +${p}`,tone:'streak'})}
+    if(r.gaps>0){const base=SCORE_RULES.gapBase[Math.min(r.gaps,SCORE_RULES.gapBase.length-1)]+Math.max(0,r.gaps-SCORE_RULES.gapBase.length+1)*1200;const mult=r.narrowest<=SCORE_RULES.gapVeryNarrowThreshold?2:r.narrowest<=SCORE_RULES.gapNarrowThreshold?1.5:1;const p=Math.round(base*mult);scoreState.gapShots++;scoreState.maxGaps=Math.max(scoreState.maxGaps,r.gaps);addScore('gapShot',p,{x,y:y-52,label:`GAP ×${r.gaps}  +${p}`,tone:'gap'})}
+  }
+  function markShotFailure(id){const r=shotRecord(id);if(!r||r.resolved)return;r.resolved=true;scoreState.failedShots++;scoreState.currentStreak=0}
+  function popupAtS(s,text,opts={}){const p=trackPos(clamp(s,0,track.length));scorePopups.push({x:p.x,y:p.y,text,age:0,duration:opts.duration||1.05,tone:opts.tone||'normal',small:!!opts.small})}
+  function updateShellHud(){
+    const level=Number.isFinite(+activeStageMeta?.campaignLevel)?activeStageMeta.campaignLevel:(loadedStageIndex>=0?loadedStageIndex+1:'—');
+    hudStageValue.textContent=String(level).padStart(2,'0');
+    hudScoreValue.textContent=Math.round(displayScore).toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US');
+  }
+  function showResult(){
+    if(resultShown)return;
+    resultShown=true;
+    if(activeGameMode==='campaign'&&cleared)finalizeCampaignStageClear();
+    if(activeGameMode==='survival'&&gameOver)finalizeSurvivalRecord();
+    const title=document.getElementById('resultTitle');
+    const t=UI_TEXT[uiLanguage];
+    title.textContent=cleared?(campaignResultNextIndex<0&&activeGameMode==='campaign'?t.campaignComplete:(uiLanguage==='ja'?'ステージクリア':'STAGE CLEAR')):(uiLanguage==='ja'?'ゲームオーバー':'GAME OVER');
+    if(campaignResultWasHighScore)title.textContent+=` · ${t.newHighScore}`;
+    if(survivalResultWasRecord)title.textContent+=` · ${t.newHighScore}`;
+    const b=scoreState.buckets,ja=uiLanguage==='ja';
+    const rows=[[ja?'マーブル消去':'MARBLE CLEAR',b.marbleClear],[ja?'特殊消去':'SPECIAL CLEAR',b.specialClear],[ja?'ショットストリーク':'SHOT STREAK',b.shotStreak],[ja?'磁力チェイン':'MAGNETIC CHAIN',b.magneticChain],[ja?'ギャップショット':'GAP SHOT',b.gapShot],[ja?'特殊発動':'SPECIAL ACTIVATE',b.specialActivate],['WAVE CLEAR BONUS',b.waveClearBonus],[ja?'セーフティボーナス':'SAFETY BONUS',b.safetyBonus]];
+    const difficultyText=activeGameMode==='campaign'?` · ${ja?'難易度':'DIFFICULTY'} ${difficultyLabel()}`:'';
+    const survivalText=activeGameMode==='survival'?`<div class="result-row total"><span>${t.survivalTime}</span><strong>${formatDuration(survivalState?.elapsed)}</strong></div>`:'';
+    document.getElementById('resultStats').innerHTML=`<div class="result-breakdown">${rows.map(([k,v])=>`<div class="result-row"><span>${k}</span><strong>${v.toLocaleString()}</strong></div>`).join('')}${survivalText}<div class="result-row total"><span>${ja?'合計':'TOTAL'}</span><strong>${scoreValue().toLocaleString()}</strong></div></div><div class="result-record">${ja?'発射':'SHOTS'} ${shots} · ${ja?'成功率':'SUCCESS'} ${shots?Math.round(scoreState.successfulShots/shots*100):0}% · ${ja?'最大ストリーク':'MAX STREAK'} ${scoreState.maxStreak} · ${ja?'最大磁力チェイン':'MAX CHAIN'} ${maxChain} · ${ja?'ギャップショット':'GAP SHOTS'} ${scoreState.gapShots}${difficultyText}</div>`;
+    configureResultActions();setShellScreen('result');if(cleared)startStageClearMusic();else startGameOverMusic();
+  }
+
+  // ---------- Audio ----------
+  // BGM uses HTMLAudioElement so the standalone file:// build can load adjacent
+  // Ogg assets without fetch/CORS. Synthesized SE remains on the Web Audio graph.
+  const AUDIO_SETTINGS_KEY='marble-popper-audio-v3';
+  const LEGACY_AUDIO_SETTINGS_V2='marble-popper-audio-v2';
+  const LEGACY_AUDIO_SETTINGS_V1='marble-popper-audio-v1';
+  const NORMAL_BGM_FADE=.5;
+  const MUSIC_CROSSFADE=.5;
+  const PANIC_ENTER_REMAINING=.16;
+  const PANIC_EXIT_REMAINING=.23;
+  const normalBgm=new Audio('assets/audio/bgm.ogg');
+  const panicBgm=new Audio('assets/audio/panic_loop.ogg');
+  const stageClearBgm=new Audio('assets/audio/stage_clear.ogg');
+  const gameOverBgm=new Audio('assets/audio/game_over.ogg');
+  normalBgm.preload='metadata';normalBgm.loop=false;
+  panicBgm.preload='auto';panicBgm.loop=true;
+  stageClearBgm.preload='auto';stageClearBgm.loop=true;
+  gameOverBgm.preload='auto';gameOverBgm.loop=true;
+  let audioSettings=loadAudioSettings();
+  let audioCtx=null, masterGain=null, sfxGain=null, sfxLimiter=null, noiseBuffer=null,waveRumble=null;
+  let soundEnabled=!audioSettings.muted;
+  let musicSessionActive=false,panicActive=false,stageClearMusicActive=false,gameOverMusicActive=false,normalMix=1,panicMix=0;
+  let normalPlayPending=false,panicPlayPending=false,stageClearPlayPending=false,gameOverPlayPending=false;
+
+  function loadAudioSettings(){
+    const defaults={master:80,bgm:55,sfx:50,muted:false};
+    try{
+      const current=localStorage.getItem(AUDIO_SETTINGS_KEY);
+      const v2=!current&&localStorage.getItem(LEGACY_AUDIO_SETTINGS_V2);
+      const v1=!current&&!v2&&localStorage.getItem(LEGACY_AUDIO_SETTINGS_V1);
+      const saved=JSON.parse(current||v2||v1||'null');
+      if(!saved||typeof saved!=='object')return defaults;
+      if(v2)saved.sfx=Number(saved.sfx??100)*.4;
+      else if(v1)saved.sfx=Number(saved.sfx??100)*.04;
+      for(const key of ['master','bgm','sfx'])saved[key]=Math.max(0,Math.min(100,Number(saved[key]??defaults[key])));
+      return{master:saved.master,bgm:saved.bgm,sfx:saved.sfx,muted:!!saved.muted};
+    }catch{return defaults}
+  }
+  function saveAudioSettings(){try{localStorage.setItem(AUDIO_SETTINGS_KEY,JSON.stringify(audioSettings))}catch{}}
+  function syncVolumeControls(){
+    for(const [key,input] of [['master',masterVolumeInput],['bgm',bgmVolumeInput],['sfx',sfxVolumeInput]]){
+      input.value=String(audioSettings[key]);document.getElementById(`${key}VolumeValue`).textContent=`${Math.round(audioSettings[key])}%`;
+    }
+  }
+  // v3 calibration: the former v2 100% gain is now approximately 40%.
+  function sfxGainFor(value){return value<=0?0:value/2}
+  function applyAudioLevels(immediate=false){
+    soundEnabled=!audioSettings.muted;
+    if(masterGain&&audioCtx){
+      const value=soundEnabled?audioSettings.master/100:0;
+      if(immediate)masterGain.gain.setValueAtTime(value,audioCtx.currentTime);
+      else masterGain.gain.setTargetAtTime(Math.max(.0001,value),audioCtx.currentTime,.015);
+    }
+    if(sfxGain&&audioCtx){
+      const value=sfxGainFor(audioSettings.sfx);
+      if(immediate)sfxGain.gain.setValueAtTime(value,audioCtx.currentTime);
+      else sfxGain.gain.setTargetAtTime(Math.max(.0001,value),audioCtx.currentTime,.015);
+    }
+    applyMusicVolumes();updateSoundButtons();
+  }
+  function musicBaseVolume(){return audioSettings.muted?0:(audioSettings.master/100)*(audioSettings.bgm/100)}
+  function normalLoopEnvelope(){
+    if(!Number.isFinite(normalBgm.duration)||normalBgm.duration<=0)return 1;
+    const atStart=Math.min(1,normalBgm.currentTime/NORMAL_BGM_FADE);
+    const atEnd=Math.min(1,Math.max(0,normalBgm.duration-normalBgm.currentTime)/NORMAL_BGM_FADE);
+    return Math.min(atStart,atEnd);
+  }
+  function applyMusicVolumes(){
+    const base=musicBaseVolume();
+    normalBgm.volume=Math.max(0,Math.min(1,base*normalMix*normalLoopEnvelope()));
+    panicBgm.volume=Math.max(0,Math.min(1,base*panicMix));
+    stageClearBgm.volume=Math.max(0,Math.min(1,base));
+    gameOverBgm.volume=Math.max(0,Math.min(1,base));
+  }
+  function safeMediaPlay(media){
+    const pendingKey=media===normalBgm?'normal':media===panicBgm?'panic':media===stageClearBgm?'clear':'gameover';
+    if((pendingKey==='normal'&&normalPlayPending)||(pendingKey==='panic'&&panicPlayPending)||(pendingKey==='clear'&&stageClearPlayPending)||(pendingKey==='gameover'&&gameOverPlayPending)||!media.paused)return;
+    if(pendingKey==='normal')normalPlayPending=true;else if(pendingKey==='panic')panicPlayPending=true;else if(pendingKey==='clear')stageClearPlayPending=true;else gameOverPlayPending=true;
+    const result=media.play();
+    if(result&&typeof result.finally==='function')result.catch(()=>{}).finally(()=>{if(pendingKey==='normal')normalPlayPending=false;else if(pendingKey==='panic')panicPlayPending=false;else if(pendingKey==='clear')stageClearPlayPending=false;else gameOverPlayPending=false});
+  }
+  function startStageMusic(resetPosition=true){
+    musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=false;normalMix=1;panicMix=0;
+    if(resetPosition){normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.currentTime=0}
+    applyMusicVolumes();safeMediaPlay(normalBgm);if(waveState.phase==='deploying'&&waveState.rumbleStarted)startWaveRumble();
+  }
+  function startStageClearMusic(){
+    stopWaveRumble();musicSessionActive=true;panicActive=false;stageClearMusicActive=true;gameOverMusicActive=false;normalBgm.pause();panicBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;gameOverBgm.currentTime=0;stageClearBgm.pause();stageClearBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(stageClearBgm)
+  }
+  function startGameOverMusic(){
+    stopWaveRumble();musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=true;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.pause();gameOverBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(gameOverBgm)
+  }
+  function stopStageMusic(resetPosition=true){
+    stopWaveRumble();
+    musicSessionActive=false;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=false;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();
+    if(resetPosition){normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.currentTime=0}
+    normalMix=1;panicMix=0;applyMusicVolumes();
+  }
+  function pauseStageMusic(){normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();stopWaveRumble()}
+  function resumeStageMusic(){
+    if(!musicSessionActive)return;
+    if(stageClearMusicActive)safeMediaPlay(stageClearBgm);else if(gameOverMusicActive)safeMediaPlay(gameOverBgm);else if(panicActive)safeMediaPlay(panicBgm);else safeMediaPlay(normalBgm);
+    if(waveState.phase==='deploying'&&waveState.rumbleStarted)startWaveRumble();
+  }
+  function updatePanicState(){
+    if(clearPending||!segments.length){panicActive=false;return}
+    let front=0;for(const seg of segments)for(const marble of seg.marbles)front=Math.max(front,marble.s);
+    const remaining=1-Math.max(0,Math.min(1,front/Math.max(1,track.length)));
+    if(panicActive){if(remaining>=PANIC_EXIT_REMAINING)panicActive=false}
+    else if(remaining<=PANIC_ENTER_REMAINING){panicActive=true;panicBgm.currentTime=0}
+  }
+  function updateMusic(dt){
+    if(!musicSessionActive)return;
+    if(stageClearMusicActive||gameOverMusicActive){applyMusicVolumes();return}
+    if(shellScreen!=='playing'||paused||gameOver||cleared){pauseStageMusic();return}
+    updatePanicState();
+    const step=Math.min(1,dt/MUSIC_CROSSFADE),normalTarget=panicActive?0:1,panicTarget=panicActive?1:0;
+    normalMix+=Math.sign(normalTarget-normalMix)*Math.min(Math.abs(normalTarget-normalMix),step);
+    panicMix+=Math.sign(panicTarget-panicMix)*Math.min(Math.abs(panicTarget-panicMix),step);
+    if(normalBgm.ended){normalBgm.currentTime=0;if(!panicActive)safeMediaPlay(normalBgm)}
+    if(panicActive)safeMediaPlay(panicBgm);else safeMediaPlay(normalBgm);
+    if(panicActive&&normalMix<=.001)normalBgm.pause();
+    if(!panicActive&&panicMix<=.001){panicBgm.pause();panicBgm.currentTime=0}
+    applyMusicVolumes();
+  }
+
+  function ensureAudio() {
+    if (!soundEnabled) return null;
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) {
+      audioCtx=new AC();
+      masterGain=audioCtx.createGain();
+      sfxGain=audioCtx.createGain();
+      sfxLimiter=audioCtx.createDynamicsCompressor();
+      masterGain.gain.value=audioSettings.master/100;
+      sfxGain.gain.value=sfxGainFor(audioSettings.sfx);
+      sfxLimiter.threshold.value=-4;sfxLimiter.knee.value=3;sfxLimiter.ratio.value=12;sfxLimiter.attack.value=.003;sfxLimiter.release.value=.12;
+      sfxGain.connect(sfxLimiter);sfxLimiter.connect(masterGain);masterGain.connect(audioCtx.destination);
+
+      noiseBuffer=audioCtx.createBuffer(1,Math.max(1,Math.floor(audioCtx.sampleRate*.7)),audioCtx.sampleRate);
+      const d=noiseBuffer.getChannelData(0);
+      for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    }
+    if (audioCtx.state==='suspended') audioCtx.resume().catch(()=>{});
+    return audioCtx;
+  }
+
+  function tone({freq=440,endFreq=freq,duration=.08,type='sine',gain=.08,delay=0,attack=.004}={}) {
+    const ac=ensureAudio(); if (!ac || !soundEnabled) return;
+    const t=ac.currentTime+delay;
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.type=type;
+    o.frequency.setValueAtTime(Math.max(20,freq),t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20,endFreq),t+duration);
+    g.gain.setValueAtTime(.0001,t);
+    g.gain.exponentialRampToValueAtTime(Math.max(.0002,gain),t+Math.min(attack,duration*.35));
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+duration+.02);
+  }
+
+  function noise({duration=.12,gain=.07,delay=0,filter=900,filterEnd=180,type='lowpass'}={}) {
+    const ac=ensureAudio(); if (!ac || !noiseBuffer || !soundEnabled) return;
+    const t=ac.currentTime+delay;
+    const src=ac.createBufferSource(), f=ac.createBiquadFilter(), g=ac.createGain();
+    src.buffer=noiseBuffer;
+    f.type=type;
+    f.frequency.setValueAtTime(Math.max(30,filter),t);
+    f.frequency.exponentialRampToValueAtTime(Math.max(30,filterEnd),t+duration);
+    g.gain.setValueAtTime(Math.max(.0002,gain),t);
+    g.gain.exponentialRampToValueAtTime(.0001,t+duration);
+    src.connect(f); f.connect(g); g.connect(sfxGain); src.start(t); src.stop(t+duration+.02);
+  }
+
+  function sfxShot() {
+    tone({freq:210,endFreq:520,duration:.085,type:'triangle',gain:.055});
+    noise({duration:.055,gain:.022,filter:1800,filterEnd:700,type:'bandpass'});
+  }
+  function sfxInsert(speed=500) {
+    const k=clamp((speed-100)/900,0,1);
+    tone({freq:180+70*k,endFreq:105+35*k,duration:.065,type:'sine',gain:.045+.025*k});
+    noise({duration:.045,gain:.018+.012*k,filter:1100,filterEnd:350,type:'bandpass'});
+  }
+  function sfxMatch(count=3,chainLevel=1) {
+    const base=350+Math.min(5,chainLevel-1)*55;
+    const loud=Math.min(.105,.052+(count-3)*.010+(chainLevel-1)*.009);
+    tone({freq:base,endFreq:base*1.22,duration:.10,type:'triangle',gain:loud});
+    tone({freq:base*1.26,endFreq:base*1.52,duration:.12,type:'sine',gain:loud*.72,delay:.035});
+  }
+  function sfxReconnect(impact=80) {
+    const k=clamp((impact-COLLISION_KICK_MIN)/(COLLISION_KICK_MAX-COLLISION_KICK_MIN),0,1);
+    tone({freq:145+55*k,endFreq:92+26*k,duration:.07,type:'triangle',gain:.04+.055*k});
+    noise({duration:.055,gain:.025+.038*k,filter:950+650*k,filterEnd:260,type:'bandpass'});
+  }
+  function startWaveRumble(){
+    if(waveRumble||shellScreen!=='playing')return;
+    const ac=ensureAudio();if(!ac||!noiseBuffer||!soundEnabled)return;
+    const t=ac.currentTime,src=ac.createBufferSource(),filter=ac.createBiquadFilter(),gain=ac.createGain(),motor=ac.createOscillator(),motorGain=ac.createGain();
+    src.buffer=noiseBuffer;src.loop=true;src.playbackRate.value=.62;
+    filter.type='lowpass';filter.frequency.setValueAtTime(360,t);filter.frequency.linearRampToValueAtTime(620,t+.35);filter.Q.value=1.1;
+    gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.0217,t+.12);
+    motor.type='triangle';motor.frequency.value=54;motorGain.gain.setValueAtTime(.0001,t);motorGain.gain.exponentialRampToValueAtTime(.006,t+.14);
+    src.connect(filter);filter.connect(gain);gain.connect(sfxGain);motor.connect(motorGain);motorGain.connect(sfxGain);src.start(t);motor.start(t);
+    waveRumble={src,motor,gain,motorGain};
+  }
+  function stopWaveRumble(){
+    if(!waveRumble)return;
+    const active=waveRumble;waveRumble=null;
+    const t=audioCtx?.currentTime||0;
+    for(const gain of [active.gain,active.motorGain]){gain.gain.cancelScheduledValues(t);gain.gain.setValueAtTime(Math.max(.0001,gain.gain.value),t);gain.gain.exponentialRampToValueAtTime(.0001,t+.08)}
+    try{active.src.stop(t+.09);active.motor.stop(t+.09)}catch{}
+  }
+  function sfxSafetyTick(delay=0){noise({duration:.020,gain:.024,delay,filter:4600,filterEnd:1050,type:'bandpass'})}
+  function sfxBomb() {
+    tone({freq:92,endFreq:38,duration:.30,type:'sine',gain:.16});
+    noise({duration:.30,gain:.15,filter:1050,filterEnd:120,type:'lowpass'});
+  }
+  function sfxWipe() {
+    noise({duration:.34,gain:.095,filter:420,filterEnd:5200,type:'bandpass'});
+    tone({freq:330,endFreq:980,duration:.28,type:'sine',gain:.065});
+  }
+  function sfxPower(up=true) {
+    if (up) {
+      tone({freq:420,endFreq:610,duration:.11,type:'sine',gain:.055});
+      tone({freq:620,endFreq:890,duration:.13,type:'sine',gain:.047,delay:.07});
+    } else {
+      tone({freq:390,endFreq:210,duration:.15,type:'sawtooth',gain:.045});
+      tone({freq:250,endFreq:125,duration:.18,type:'triangle',gain:.04,delay:.055});
+    }
+  }
+  function sfxPenaltySeed() {
+    tone({freq:270,endFreq:170,duration:.10,type:'square',gain:.027});
+  }
+
+  function toggleSound() {
+    audioSettings.muted=!audioSettings.muted;soundEnabled=!audioSettings.muted;
+    if(soundEnabled){ensureAudio();resumeStageMusic()}else stopWaveRumble();
+    saveAudioSettings();applyAudioLevels();
+  }
+
+  // ---------- Track ----------
+  const legacyControlPoints = [
+    [60, 106], [230, 88], [440, 118], [625, 205], [590, 305],
+    [410, 346], [206, 300], [132, 380], [238, 465], [470, 448],
+    [690, 390], [905, 405], [1095, 476], [1056, 555], [870, 579],
+    [655, 536], [512, 500], [405, 548], [535, 606], [812, 612], [1128, 568]
+  ].map(([x,y]) => ({x,y}));
+
+  function catmullRom(p0,p1,p2,p3,t) {
+    const t2=t*t, t3=t2*t;
+    return {
+      x: .5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+      y: .5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+    };
+  }
+
+  function buildDenseTrack(points) {
+    const dense=points.map(p=>({x:+p.x,y:+p.y}));
+    const cum=[0];
+    for (let i=1;i<dense.length;i++) {
+      const dx=dense[i].x-dense[i-1].x, dy=dense[i].y-dense[i-1].y;
+      cum.push(cum[i-1]+Math.hypot(dx,dy));
+    }
+    return {pts:dense,cum,length:cum[cum.length-1]};
+  }
+
+  function buildLegacyTrack() {
+    const dense=[];
+    for (let i=0;i<legacyControlPoints.length-1;i++) {
+      const p0=legacyControlPoints[Math.max(0,i-1)];
+      const p1=legacyControlPoints[i];
+      const p2=legacyControlPoints[i+1];
+      const p3=legacyControlPoints[Math.min(legacyControlPoints.length-1,i+2)];
+      const steps=30;
+      for (let j=0;j<steps;j++) dense.push(catmullRom(p0,p1,p2,p3,j/steps));
+    }
+    dense.push(legacyControlPoints[legacyControlPoints.length-1]);
+    return buildDenseTrack(dense);
+  }
+
+  let track=buildLegacyTrack();
+
+
+  function trackPos(s) {
+    s = Math.max(0, Math.min(track.length, s));
+    let lo=0, hi=track.cum.length-1;
+    while (lo+1<hi) {
+      const mid=(lo+hi)>>1;
+      if (track.cum[mid] < s) lo=mid; else hi=mid;
+    }
+    const a=track.pts[lo], b=track.pts[hi];
+    const span=Math.max(1e-6, track.cum[hi]-track.cum[lo]);
+    const t=(s-track.cum[lo])/span;
+    return {x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t};
+  }
+  function trackTangent(s) {
+    const a=trackPos(s-3), b=trackPos(s+3);
+    const len=Math.hypot(b.x-a.x,b.y-a.y)||1;
+    return {x:(b.x-a.x)/len,y:(b.y-a.y)/len};
+  }
+
+  function segIntersection(a,b,c,d) {
+    const rx=b.x-a.x,ry=b.y-a.y,sx=d.x-c.x,sy=d.y-c.y;
+    const den=rx*sy-ry*sx;
+    if (Math.abs(den)<1e-9) return null;
+    const qx=c.x-a.x,qy=c.y-a.y;
+    const t=(qx*sy-qy*sx)/den, u=(qx*ry-qy*rx)/den;
+    if (t<=1e-5||t>=1-1e-5||u<=1e-5||u>=1-1e-5) return null;
+    return {x:a.x+t*rx,y:a.y+t*ry,t,u};
+  }
+  function detectTrackCrossings(t) {
+    const raw=[];
+    for(let i=0;i<t.pts.length-1;i++){
+      for(let j=i+2;j<t.pts.length-1;j++){
+        const h=segIntersection(t.pts[i],t.pts[i+1],t.pts[j],t.pts[j+1]);
+        if(!h)continue;
+        raw.push({
+          i,j,x:h.x,y:h.y,
+          s1:t.cum[i]+(t.cum[i+1]-t.cum[i])*h.t,
+          s2:t.cum[j]+(t.cum[j+1]-t.cum[j])*h.u
+        });
+      }
+    }
+    const out=[];
+    for(const h of raw){
+      const q=out.find(x=>Math.hypot(x.x-h.x,x.y-h.y)<9);
+      if(q){q.x=(q.x+h.x)/2;q.y=(q.y+h.y)/2;q.s1=(q.s1+h.s1)/2;q.s2=(q.s2+h.s2)/2}
+      else out.push({...h});
+    }
+    return out;
+  }
+  function finiteNumber(v){return typeof v==='number'&&Number.isFinite(v)}
+  function normalizeGameplayProfile(profile,rngSeed=1,fallbackId='custom-v1'){
+    const gp=profile||{};
+    if(gp.format!==undefined&&gp.format!=='marble-popper-gameplay-profile')throw new Error('Unsupported Gameplay Profile format.');
+    if(gp.schemaVersion!==5)throw new Error('Unsupported Gameplay Profile schemaVersion. Expected v5.');
+    const totalBalls=Math.floor(+gp.totalBalls);
+    const colorCount=Math.floor(+gp.colorCount);
+    const baseSpeed=+gp.baseSpeed;
+    const projectileSpeedScale=Number(gp.projectileSpeedScale??1);
+    if(!Number.isFinite(totalBalls)||totalBalls<1||totalBalls>1000)throw new Error('Invalid Gameplay Profile totalBalls.');
+    if(!Number.isFinite(colorCount)||colorCount<2||colorCount>COLORS.length)throw new Error(`Gameplay Profile colorCount must be 2–${COLORS.length}.`);
+    if(!Number.isFinite(baseSpeed)||baseSpeed<=0||baseSpeed>250)throw new Error('Invalid Gameplay Profile baseSpeed.');
+    if(!Number.isFinite(projectileSpeedScale)||projectileSpeedScale<.4||projectileSpeedScale>2)throw new Error('Gameplay Profile projectileSpeedScale must be 0.4–2.0.');
+    const qp=gp.queueProfile||{};
+    const weights=Array.isArray(qp.runLengthWeights)?qp.runLengthWeights.slice(0,4).map(Number):[...DEFAULT_QUEUE_PROFILE.runLengthWeights];
+    while(weights.length<4)weights.push(0);
+    if(weights.some(x=>!Number.isFinite(x)||x<0)||weights.reduce((a,b)=>a+b,0)<=0)throw new Error('Invalid Gameplay Profile queue runLengthWeights.');
+    const longRunTailScale=Number(qp.longRunTailScale);
+    if(!Number.isFinite(longRunTailScale)||longRunTailScale<0||longRunTailScale>1)throw new Error('Gameplay Profile longRunTailScale must be 0–1.');
+    const singletonStreakLimit=Math.floor(Number(qp.singletonStreakLimit));
+    const singletonOverflowChance=Number(qp.singletonOverflowChance);
+    if(!Number.isInteger(singletonStreakLimit)||singletonStreakLimit<1||singletonStreakLimit>4)throw new Error('Gameplay Profile singletonStreakLimit must be 1–4.');
+    if(!Number.isFinite(singletonOverflowChance)||singletonOverflowChance<0||singletonOverflowChance>1)throw new Error('Gameplay Profile singletonOverflowChance must be 0–1.');
+    const wp=gp.waveProfile||{},waveSize=Math.floor(+wp.waveSize),waveInterval=+wp.waveInterval,entryPaddingMarbles=+wp.entryPaddingMarbles,deploymentSpeed=+wp.deploymentSpeed,emptyBoardInterval=+wp.emptyBoardInterval;
+    if(!Number.isFinite(waveSize)||waveSize<3||waveSize>80)throw new Error('Gameplay Profile waveSize must be 3–80.');
+    if(!Number.isFinite(waveInterval)||waveInterval<1||waveInterval>15)throw new Error('Gameplay Profile waveInterval must be 1–15 seconds.');
+    if(!Number.isFinite(entryPaddingMarbles)||entryPaddingMarbles<0||entryPaddingMarbles>5)throw new Error('Gameplay Profile entryPaddingMarbles must be 0–5.');
+    if(!Number.isFinite(deploymentSpeed)||deploymentSpeed<200||deploymentSpeed>1200)throw new Error('Gameplay Profile deploymentSpeed must be 200–1200 px/s.');
+    if(!Number.isFinite(emptyBoardInterval)||emptyBoardInterval<.25||emptyBoardInterval>5)throw new Error('Gameplay Profile emptyBoardInterval must be 0.25–5 seconds.');
+    const waveProfile={enabled:true,waveSize,waveInterval,entryPaddingMarbles,deploymentSpeed,emptyBoardInterval};
+    return{
+      profileId:String(gp.profileId||gp.id||fallbackId),
+      rngSeed:(Math.floor(+rngSeed)>>>0)||1,
+      totalBalls,colorCount,baseSpeed,projectileSpeedScale,
+      queueProfile:{id:String(qp.id||'custom-v2'),runLengthWeights:weights,longRunTailScale,singletonStreakLimit,singletonOverflowChance},waveProfile
+    };
+  }
+  function validateAndNormalizeStageSpec(spec,gameplayOverride=null) {
+    if(!spec||typeof spec!=='object')throw new Error('StageSpec must be a JSON object.');
+    if(spec.format!=='marble-popper-stage'||![1,2].includes(spec.schemaVersion))throw new Error('Unsupported StageSpec format/schemaVersion. Expected marble-popper-stage v1 or v2.');
+    const v2=spec.schemaVersion===2;
+    const space=v2?spec.coordinateSystem:spec.canvas;
+    const compat=v2?spec.compatibility:spec.rules;
+    if(!spec.stageId||typeof spec.stageId!=='string')throw new Error('stageId is required.');
+    if(space?.width!==W||space?.height!==H)throw new Error(`StageSpec coordinate system must be ${W}×${H}.`);
+    if(v2&&compat?.ruleset!=='marble-popper-core-v1')throw new Error('Unsupported StageSpec compatibility.ruleset.');
+    if(Math.abs((+compat?.marbleRadius||0)-BALL_R)>.001||Math.abs((+compat?.marbleSpacing||0)-BALL_SPACING)>.001)throw new Error('StageSpec marble geometry is incompatible with this game build.');
+    if(compat?.maxCrossings!==2)throw new Error('StageSpec must declare maxCrossings = 2 in its compatibility metadata.');
+    if(spec.geometry?.pathEncoding!=='absolute-dense-points-v1')throw new Error('Unsupported pathEncoding.');
+    const path=spec.geometry?.path;
+    if(!Array.isArray(path)||path.length<2)throw new Error('geometry.path must contain at least two points.');
+    const cleanPath=path.map((p,i)=>{
+      if(!p||!finiteNumber(p.x)||!finiteNumber(p.y))throw new Error(`Invalid path point ${i}.`);
+      if(p.x<0||p.x>W||p.y<0||p.y>H)throw new Error(`Path point ${i} is outside the canvas.`);
+      return {x:p.x,y:p.y};
+    });
+    const newTrack=buildDenseTrack(cleanPath);
+    if(newTrack.length<100)throw new Error('Track is too short.');
+    if(finiteNumber(spec.geometry.trackLength)&&Math.abs(spec.geometry.trackLength-newTrack.length)>1)throw new Error('StageSpec trackLength does not match geometry.path.');
+
+    const crossingSpecs=Array.isArray(spec.geometry.crossings)?spec.geometry.crossings:[];
+    if(crossingSpecs.length>2)throw new Error('StageSpec contains more than two crossings.');
+    const detected=detectTrackCrossings(newTrack);
+    if(detected.length!==crossingSpecs.length)throw new Error(`Crossing count mismatch: StageSpec ${crossingSpecs.length}, path ${detected.length}.`);
+    const cleanCrossings=crossingSpecs.map((c,i)=>{
+      for(const k of ['x','y','s1','s2','firstS','secondS','upperS','lowerS'])if(!finiteNumber(c?.[k]))throw new Error(`Crossing ${i} has invalid ${k}.`);
+      if(c.upperS<0||c.upperS>newTrack.length||c.lowerS<0||c.lowerS>newTrack.length)throw new Error(`Crossing ${i} arc positions are outside the track.`);
+      const nearest=detected.reduce((best,d)=>!best||Math.hypot(d.x-c.x,d.y-c.y)<Math.hypot(best.x-c.x,best.y-c.y)?d:best,null);
+      if(!nearest||Math.hypot(nearest.x-c.x,nearest.y-c.y)>3)throw new Error(`Crossing ${i} does not align with geometry.path.`);
+      const upperIsVisit=Math.min(Math.abs(c.upperS-c.s1),Math.abs(c.upperS-c.s2))<1;
+      const lowerIsVisit=Math.min(Math.abs(c.lowerS-c.s1),Math.abs(c.lowerS-c.s2))<1;
+      if(!upperIsVisit||!lowerIsVisit||Math.abs(c.upperS-c.lowerS)<1)throw new Error(`Crossing ${i} upper/lower resolution is invalid.`);
+      return {id:String(c.id||String.fromCharCode(65+i)),x:c.x,y:c.y,s1:c.s1,s2:c.s2,upperS:c.upperS,lowerS:c.lowerS};
+    });
+
+    const obstacleSpecs=Array.isArray(spec.geometry.obstacles)?spec.geometry.obstacles:[];
+    const cleanObstacles=obstacleSpecs.map((o,i)=>{
+      if(!o||!finiteNumber(o.x)||!finiteNumber(o.y))throw new Error(`Obstacle ${i} has invalid position.`);
+      if(o.type==='circle'){
+        if(!finiteNumber(o.r)||o.r<=0)throw new Error(`Obstacle ${i} has invalid radius.`);
+        return {type:'circle',x:o.x,y:o.y,r:o.r};
+      }
+      if(o.type==='rect'){
+        if(!finiteNumber(o.w)||!finiteNumber(o.h)||o.w<=0||o.h<=0)throw new Error(`Obstacle ${i} has invalid size.`);
+        return {type:'rect',x:o.x,y:o.y,w:o.w,h:o.h};
+      }
+      throw new Error(`Obstacle ${i} has unsupported type.`);
+    });
+
+    // StageSpec v2 is board-only. Direct MVP testing applies a separate default Gameplay Profile.
+    // Legacy v1 keeps its embedded gameplay block for backward compatibility only.
+    const gp=v2?(gameplayOverride||{
+      format:'marble-popper-gameplay-profile',schemaVersion:5,profileId:'default-test-v1',
+      rngSeed:(Math.floor(+spec.source?.seed)>>>0)||1,
+      totalBalls:DEFAULT_TOTAL_BALLS,
+      colorCount:4,
+      baseSpeed:DEFAULT_BASE_SPEED,
+      projectileSpeedScale:1,
+      queueProfile:{...DEFAULT_QUEUE_PROFILE,runLengthWeights:[...DEFAULT_QUEUE_PROFILE.runLengthWeights]},waveProfile:{...DEFAULT_WAVE_PROFILE}
+    }):(spec.gameplay||{});
+    const gameplay=normalizeGameplayProfile(gp,gp.rngSeed,(v2?'default-test-v1':'legacy-stagespec-v1'));
+
+    return {
+      spec,
+      track:newTrack,
+      crossings:cleanCrossings,
+      obstacles:cleanObstacles,
+      gameplay
+    };
+  }
+  function applyLoadedStage(normalized,fileName='StageSpec',meta=null) {
+    const difficulty=difficultyConfig();
+    activeStageSpec=normalized.spec;
+    activeStageMeta=meta;
+    activeStageName=activeStageSpec.stageId||fileName;
+    setBackgroundPalette(stagePaletteIndex());
+    track=normalized.track;
+    stageCrossings=normalized.crossings;
+    stageObstacles=normalized.obstacles;
+    stageBaseSpeed=normalized.gameplay.baseSpeed*difficulty.drive;
+    stageProjectileSpeedScale=normalized.gameplay.projectileSpeedScale*difficulty.shot;
+    stageTotalBalls=normalized.gameplay.totalBalls;
+    activeColorCount=normalized.gameplay.colorCount;
+    stageQueueProfile={...normalized.gameplay.queueProfile,runLengthWeights:[...normalized.gameplay.queueProfile.runLengthWeights]};
+    stageWaveProfile={...normalized.gameplay.waveProfile};
+    const bits=[`Stage: ${activeStageName}`];
+    if(loadedStageEntries.length>1&&loadedStageIndex>=0)bits.push(`${loadedStageIndex+1}/${loadedStageEntries.length}`);
+    if(Number.isFinite(+meta?.rank))bits.push(`Rank ${meta.rank}`);
+    if(Number.isFinite(+meta?.difficulty))bits.push(`Score ${(+meta.difficulty).toFixed(1)}`);
+    if(Number.isFinite(+meta?.campaignLevel))bits.push(`Level ${meta.campaignLevel}`);
+    if(Number.isFinite(+meta?.tier))bits.push(`Tier ${meta.tier}`);
+    if(activeGameMode==='campaign')bits.push(`Difficulty: ${difficultyLabel()}`);
+    bits.push(`Profile: ${normalized.gameplay.profileId||'legacy'}`);
+    stageStatus.textContent=bits.join(' · ');
+    reset(normalized.gameplay.rngSeed);
+  }
+  function stageEntriesFromJSON(root,fileName='JSON') {
+    if(!root||typeof root!=='object')throw new Error('Loaded JSON must be an object.');
+    if(root.format==='marble-popper-stage')return[{spec:root,meta:null,label:root.stageId||fileName}];
+    if(root.format==='marble-popper-stage-bundle'){
+      if(!Array.isArray(root.stages)||!root.stages.length)throw new Error('Stage bundle contains no stages.');
+      return root.stages.map((item,i)=>{
+        const spec=item?.stage??item;
+        if(!spec||spec.format!=='marble-popper-stage')throw new Error(`Stage bundle entry ${i+1} is not a StageSpec.`);
+        return{spec,meta:item?.stage?item:null,label:spec.stageId||`Stage ${i+1}`};
+      });
+    }
+    if(root.format==='marble-popper-evaluated-stage-bundle'){
+      if(!Array.isArray(root.stages)||!root.stages.length)throw new Error('Evaluated bundle contains no stages.');
+      return root.stages.map((item,i)=>{
+        const spec=item?.stage;
+        if(!spec||spec.format!=='marble-popper-stage')throw new Error(`Evaluated bundle entry ${i+1} does not contain a StageSpec.`);
+        return{spec,meta:item,label:spec.stageId||`Stage ${i+1}`};
+      });
+    }
+    if(root.format==='marble-popper-campaign'){
+      if(root.schemaVersion!==1)throw new Error('Unsupported CampaignSpec schemaVersion. Expected v1.');
+      if(!Array.isArray(root.profiles)||!root.profiles.length)throw new Error('Campaign contains no Gameplay Profiles.');
+      if(!Array.isArray(root.levels)||!root.levels.length)throw new Error('Campaign contains no levels.');
+      const profiles=new Map();
+      root.profiles.forEach((profile,i)=>{
+        if(!profile||profile.format!=='marble-popper-gameplay-profile'||profile.schemaVersion!==5)throw new Error(`Campaign profile ${i+1} is not Gameplay Profile v5.`);
+        if(!profile.profileId||profiles.has(profile.profileId))throw new Error(`Campaign profile ${i+1} has a missing or duplicate profileId.`);
+        profiles.set(profile.profileId,profile);
+      });
+      const mode=root.runRngPolicy?.mode||'random-per-attempt';
+      if(!['random-per-attempt','derived-per-level'].includes(mode))throw new Error('Unsupported campaign run RNG policy.');
+      const campaignSeed=(Math.floor(+root.runRngPolicy?.campaignSeed)>>>0)||0x6d2b79f5;
+      const entries=root.levels.map((level,i)=>{
+        if(!level||level.format!=='marble-popper-level'||level.schemaVersion!==1)throw new Error(`Campaign level ${i+1} is not LevelSpec v1.`);
+        if(level.campaignLevel!==i+1)throw new Error(`Campaign level ${i+1} has a non-sequential campaignLevel.`);
+        const spec=level.stage,profile=profiles.get(level.gameplayProfileId);
+        if(!spec||spec.format!=='marble-popper-stage'||spec.schemaVersion!==2)throw new Error(`Campaign level ${i+1} does not contain StageSpec v2.`);
+        if(!profile)throw new Error(`Campaign level ${i+1} references unknown Gameplay Profile ${level.gameplayProfileId}.`);
+        const rngSeed=mode==='derived-per-level'?deriveCampaignSeed(campaignSeed,level.campaignLevel):((Date.now()^Math.imul(level.campaignLevel,0x9e3779b1))>>>0)||1;
+        const gameplay={...profile,rngSeed,queueProfile:{...(profile.queueProfile||{}),runLengthWeights:Array.isArray(profile.queueProfile?.runLengthWeights)?[...profile.queueProfile.runLengthWeights]:[]},waveProfile:profile.waveProfile?{...profile.waveProfile}:undefined};
+        const evaluation=level.geometryEvaluation||{};
+        const meta={...evaluation,rank:evaluation.globalRank,difficulty:evaluation.difficulty,campaignId:root.campaignId,levelId:level.levelId,campaignLevel:level.campaignLevel,tier:level.tier,tierRank:level.tierRank,gameplayProfileId:level.gameplayProfileId};
+        return{spec,gameplay,meta,label:`Level ${level.campaignLevel} · ${spec.stageId}`};
+      });
+      const levelIds=entries.map(entry=>entry.meta.levelId);
+      if(levelIds.some(id=>!id)||new Set(levelIds).size!==levelIds.length)throw new Error('Campaign levelId values must be present and unique.');
+      return entries;
+    }
+    throw new Error('Unsupported JSON. Load a StageSpec, stage bundle, evaluated bundle, or CampaignSpec v1.');
+  }
+  function customCampaignSaveId(root){
+    const campaignId=String(root?.campaignId||'custom-campaign').trim()||'custom-campaign';
+    const fingerprint=hashSeed(JSON.stringify(root)).toString(16).padStart(8,'0');
+    return `${campaignId}@${fingerprint}`;
+  }
+  function preflightMainCampaign(root,entries){
+    if(!root?.campaignId||typeof root.campaignId!=='string')throw new Error('A main campaign requires campaignId.');
+    if(!entries.length)throw new Error('Campaign contains no playable levels.');
+    for(let i=0;i<entries.length;i++){
+      try{validateAndNormalizeStageSpec(entries[i].spec,entries[i].gameplay)}
+      catch(error){throw new Error(`Campaign level ${i+1} failed validation: ${error.message||error}`)}
+    }
+    return true;
+  }
+  function setMainCampaign(root,entries,{custom=false,saveId=null}={}){
+    mainCampaignRoot=root;mainCampaignEntries=entries;mainCampaignId=root.campaignId;
+    mainCampaignSaveId=custom?(saveId||customCampaignSaveId(root)):mainCampaignId;
+    isCustomMainCampaign=custom;survivalSelectedIndex=0;
+    campaignSaveState(true);saveGameData();updateCampaignShell();
+  }
+  function useLoadedCampaignAsMain(){
+    if(!loadedCampaignCandidate)return false;
+    const message=uiLanguage==='ja'?'読み込んだキャンペーンを通常ゲームとサバイバルに適用しますか？':'Use the loaded campaign for the main game and Survival?';
+    if(!window.confirm(message))return false;
+    try{
+      preflightMainCampaign(loadedCampaignCandidate.root,loadedCampaignCandidate.entries);
+      setMainCampaign(loadedCampaignCandidate.root,loadedCampaignCandidate.entries,{custom:true,saveId:loadedCampaignCandidate.saveId});
+      showToast(uiLanguage==='ja'?'メインキャンペーンを切り替えました':'Main campaign changed');
+      returnToTitle();return true;
+    }catch(error){console.error(error);alert(`${uiLanguage==='ja'?'キャンペーンを適用できません':'Campaign activation failed'}:\n${error.message||error}`);return false}
+  }
+  function restoreBuiltInMainCampaign(){
+    if(!builtInCampaignRoot)return false;
+    try{
+      const entries=stageEntriesFromJSON(builtInCampaignRoot,'Built-in Main Campaign');
+      setMainCampaign(builtInCampaignRoot,entries,{custom:false});
+      showToast(uiLanguage==='ja'?'内蔵キャンペーンに戻しました':'Built-in campaign restored');
+      returnToTitle();return true;
+    }catch(error){console.error(error);alert(`Built-in campaign restore failed:\n${error.message||error}`);return false}
+  }
+  function initializeMainCampaign(){
+    if(!mainCampaignRoot||mainCampaignRoot.format!=='marble-popper-campaign'){
+      mainCampaignEntries=[];updateCampaignShell();return false;
+    }
+    try{
+      mainCampaignId=mainCampaignRoot.campaignId||mainCampaignId;mainCampaignSaveId=mainCampaignId;isCustomMainCampaign=false;
+      mainCampaignEntries=stageEntriesFromJSON(mainCampaignRoot,'Built-in Main Campaign');
+      campaignSaveState(true);updateCampaignShell();return true;
+    }catch(error){
+      console.error('Built-in campaign initialization failed:',error);mainCampaignEntries=[];updateCampaignShell();return false;
+    }
+  }
+  function startMainCampaignLevel(index,{updateRun=true}={}){
+    if(!mainCampaignEntries.length){showToast(uiLanguage==='ja'?'内蔵キャンペーンを読み込めません':'Built-in campaign unavailable');return}
+    const i=Math.max(0,Math.min(mainCampaignEntries.length-1,Math.floor(index)));
+    const entry=mainCampaignEntries[i],state=campaignSaveState(true);
+    if(mainCampaignRoot?.runRngPolicy?.mode==='random-per-attempt')entry.gameplay.rngSeed=((Date.now()^Math.imul(i+1,0x9e3779b1))>>>0)||1;
+    activeGameMode='campaign';
+    loadedStageEntries=mainCampaignEntries;loadedStageIndex=i;loadedContainerName=mainCampaignRoot.title||mainCampaignId;
+    activateLoadedStage(i);
+    if(updateRun)state.run={started:true,currentLevelId:entry.meta.levelId,currentLevelNumber:i+1,completed:false};
+    if(!state.unlockedLevelIds.includes(entry.meta.levelId))state.unlockedLevelIds.push(entry.meta.levelId);
+    saveGameData();updateCampaignShell();
+    ensureAudio();paused=false;setShellScreen('playing');startStageMusic(true);
+  }
+  function startNewCampaign(){
+    if(!mainCampaignEntries.length){showToast(uiLanguage==='ja'?'内蔵キャンペーンを読み込めません':'Built-in campaign unavailable');return}
+    const state=campaignSaveState(true);
+    if(state.run.started&&!state.run.completed){
+      const message=uiLanguage==='ja'?'進行中のキャンペーンをステージ1から始め直します。ハイスコアは残ります。よろしいですか？':'Restart the current campaign from Stage 1? High scores will be kept.';
+      if(!window.confirm(message))return;
+    }
+    startMainCampaignLevel(0);
+  }
+  function continueCampaign(){const index=continueLevelIndex();if(index>=0)startMainCampaignLevel(index)}
+  function finalizeCampaignStageClear(){
+    campaignResultLevelIndex=mainCampaignEntries.findIndex(entry=>entry.meta?.levelId===activeStageMeta?.levelId);
+    campaignResultNextIndex=-1;campaignResultWasHighScore=false;
+    if(campaignResultLevelIndex<0)return;
+    const entry=mainCampaignEntries[campaignResultLevelIndex],state=campaignSaveState(true),levelId=entry.meta.levelId;
+    const previous=state.records[levelId],finalScore=Math.round(scoreValue());
+    if(!previous||previous.scoreVersion!==SCORE_VERSION||finalScore>Number(previous.bestClearScore||0)){
+      state.records[levelId]={bestClearScore:finalScore,scoreVersion:SCORE_VERSION};
+      campaignResultWasHighScore=true;
+    }
+    const nextIndex=campaignResultLevelIndex+1;
+    if(nextIndex<mainCampaignEntries.length){
+      const next=mainCampaignEntries[nextIndex];
+      campaignResultNextIndex=nextIndex;
+      state.run={started:true,currentLevelId:next.meta.levelId,currentLevelNumber:nextIndex+1,completed:false};
+      if(!state.unlockedLevelIds.includes(next.meta.levelId))state.unlockedLevelIds.push(next.meta.levelId);
+    }else{
+      state.run={started:true,currentLevelId:levelId,currentLevelNumber:campaignResultLevelIndex+1,completed:true};
+    }
+    saveGameData();updateCampaignShell();
+  }
+  function configureResultActions(){
+    const t=UI_TEXT[uiLanguage];
+    resultReplayBtn.hidden=false;resultSelectBtn.hidden=false;
+    resultReplayBtn.textContent=t.replay;resultSelectBtn.textContent=t.stageSelect;
+    if(activeGameMode==='survival'){resultReplayBtn.textContent=t.retry;return}
+    if(activeGameMode!=='campaign')return;
+    if(!cleared){resultReplayBtn.textContent=t.retry;resultSelectBtn.hidden=true;return}
+    resultSelectBtn.textContent=t.replay;
+    if(campaignResultNextIndex>=0)resultReplayBtn.textContent=t.nextStage;
+    else resultReplayBtn.hidden=true;
+  }
+  function deriveCampaignSeed(campaignSeed,level){
+    let x=(campaignSeed^Math.imul(level,0x9e3779b1))>>>0;
+    x^=x>>>16;x=Math.imul(x,0x7feb352d);x^=x>>>15;x=Math.imul(x,0x846ca68b);x^=x>>>16;
+    return x>>>0||1;
+  }
+  function bundleOptionLabel(entry,i){
+    const m=entry.meta||{},parts=[];
+    if(Number.isFinite(+m.campaignLevel))parts.push(`L${m.campaignLevel}`);
+    else if(Number.isFinite(+m.rank))parts.push(`R${m.rank}`);
+    else parts.push(String(i+1));
+    if(Number.isFinite(+m.tier))parts.push(`T${m.tier}`);
+    if(Number.isFinite(+m.difficulty))parts.push((+m.difficulty).toFixed(1));
+    parts.push(entry.label);
+    return parts.join(' · ');
+  }
+  function refreshBundleNav(){
+    const multi=loadedStageEntries.length>1;
+    bundleNav.style.display=multi?'inline-flex':'none';
+    loadedStageSelect.replaceChildren();
+    loadedStageEntries.forEach((entry,i)=>{
+      const o=document.createElement('option');o.value=String(i);o.textContent=bundleOptionLabel(entry,i);loadedStageSelect.appendChild(o);
+    });
+    if(loadedStageIndex>=0)loadedStageSelect.value=String(loadedStageIndex);
+    prevStageBtn.disabled=!multi||loadedStageIndex<=0;
+    nextStageBtn.disabled=!multi||loadedStageIndex>=loadedStageEntries.length-1;
+  }
+  function activateLoadedStage(index){
+    if(!loadedStageEntries.length)return;
+    const i=Math.max(0,Math.min(loadedStageEntries.length-1,Math.floor(index)));
+    const entry=loadedStageEntries[i];
+    const normalized=validateAndNormalizeStageSpec(entry.spec,entry.gameplay||null);
+    loadedStageIndex=i;
+    refreshBundleNav();
+    applyLoadedStage(normalized,loadedContainerName||entry.label,entry.meta);
+  }
+  async function loadStageSpecFile(file) {
+    const raw=await file.text();
+    const root=JSON.parse(raw);
+    const entries=stageEntriesFromJSON(root,file.name);
+    loadedCampaignCandidate=root.format==='marble-popper-campaign'?{root,entries,fileName:file.name,saveId:customCampaignSaveId(root)}:null;
+    // Validate on activation rather than scanning the entire bundle up front.
+    // Crossing validation is intentionally non-trivial, and large campaign bundles
+    // should become usable immediately instead of paying that cost for every stage.
+    loadedStageEntries=entries;loadedStageIndex=0;loadedContainerName=file.name;
+    refreshBundleNav();
+    activateLoadedStage(0);
+    renderCampaignImportControls();
+  }
+  function tryActivateLoadedStage(index){
+    try{
+      activateLoadedStage(index);
+      flashText='STAGE LOADED';flashTimer=1.0;
+    }catch(e){
+      console.error(e);
+      refreshBundleNav();
+      alert(`Stage ${Math.floor(index)+1} load failed:\n${e.message||e}`);
+    }
+  }
+  // ---------- Stage generation ----------
+  function expandedRunWeights(queueProfile){
+    const base=(queueProfile?.runLengthWeights||DEFAULT_QUEUE_PROFILE.runLengthWeights).slice(0,4).map(value=>Math.max(0,+value||0));
+    while(base.length<4)base.push(0);
+    const tail=clamp(Number(queueProfile?.longRunTailScale??DEFAULT_QUEUE_PROFILE.longRunTailScale),0,1),four=base[3]||0;
+    return[...base,four*.2*tail,four*.1*tail,four*.05*tail];
+  }
+  function weightedRunLength(weights,rngFn,minLength=1){
+    const start=Math.max(1,Math.min(weights.length,Math.floor(minLength)))-1;
+    let sum=0;
+    for(let i=start;i<weights.length;i++)sum+=Math.max(0,+weights[i]||0);
+    if(sum<=0)return Math.min(weights.length,start+1);
+    let roll=rngFn()*sum;
+    for(let i=start;i<weights.length;i++){
+      roll-=Math.max(0,+weights[i]||0);
+      if(roll<=0)return i+1;
+    }
+    return weights.length;
+  }
+  function scalePhysicalRunLength(baseLength,nonContinuity,rngFn,maxLength=7){
+    const maximum=clamp(Math.floor(Number(maxLength)||7),4,7),scaled=clamp(baseLength/Math.max(.01,Number(nonContinuity)||1),1,maximum),low=Math.floor(scaled),fraction=scaled-low;
+    return Math.min(maximum,low+(fraction>0&&rngFn()<fraction?1:0));
+  }
+  function generatePhysicalQueue({count,colorCount,queueProfile,nonContinuity=1,rngFn}){
+    const out=[];
+    let last=-1,singletonStreak=0;
+    let weights=expandedRunWeights(queueProfile);
+    if(weights.reduce((sum,value)=>sum+Math.max(0,+value||0),0)<=0)weights=expandedRunWeights(DEFAULT_QUEUE_PROFILE);
+    const streakLimit=clamp(Math.floor(Number(queueProfile?.singletonStreakLimit)||2),1,4);
+    const overflowChance=clamp(Number(queueProfile?.singletonOverflowChance??.1),0,1);
+    const maxLength=Number(queueProfile?.longRunTailScale)>0?7:4;
+    while (out.length<count) {
+      let c=Math.floor(rngFn()*colorCount);
+      if(colorCount>1&&c===last)c=(c+1+Math.floor(rngFn()*(colorCount-1)))%colorCount;
+      let run=scalePhysicalRunLength(weightedRunLength(weights,rngFn),nonContinuity,rngFn,maxLength);
+      if(run===1&&singletonStreak>=streakLimit&&rngFn()>=overflowChance)run=Math.max(2,scalePhysicalRunLength(weightedRunLength(weights,rngFn,2),nonContinuity,rngFn,maxLength));
+      for (let i=0;i<run && out.length<count;i++) out.push(c);
+      singletonStreak=run===1?singletonStreak+1:0;
+      last=c;
+    }
+    return out;
+  }
+  function generateQueue(count) {
+    const nonContinuity=activeGameMode==='survival'&&survivalState?survivalState.nonContinuity:difficultyConfig().nonContinuity;
+    return generatePhysicalQueue({count,colorCount:activeColorCount,queueProfile:stageQueueProfile,nonContinuity,rngFn:rng});
+  }
+  window.__marblePopperQueueTest={generatePhysicalQueue,expandedRunWeights,weightedRunLength,scalePhysicalRunLength};
+  window.__marblePopperDataTest={normalizeGameplayProfile,stageEntriesFromJSON,validateAndNormalizeStageSpec};
+  window.__marblePopperCampaignImportTest={
+    useLoaded:useLoadedCampaignAsMain,restoreBuiltIn:restoreBuiltInMainCampaign,
+    snapshot:()=>({campaignId:mainCampaignId,saveId:mainCampaignSaveId,custom:isCustomMainCampaign,levelCount:mainCampaignEntries.length,stageTestLevelCount:loadedStageEntries.length,stageTestIndex:loadedStageIndex,runSeed:seed,mode:activeGameMode,candidateSaveId:loadedCampaignCandidate?.saveId||null,candidateLevelCount:loadedCampaignCandidate?.entries.length||0,unlockedSurvival:survivalUnlockedIndices()})
+  };
+  window.__marblePopperPlayerSaveTest={build:buildPlayerSaveEnvelope,parse:parsePlayerSaveEnvelope,merge:mergePlayerSaveData,snapshot:()=>JSON.parse(JSON.stringify(saveData))};
+
+
+  function reset(newSeed=seed) {
+    stopWaveRumble();
+    if(activeGameMode==='survival'&&survivalState)resetSurvivalRun();
+    seed = (newSeed >>> 0) || 1;
+    rng=mulberry32(seed);
+    spawnQueue=activeGameMode==='survival'?[]:generateQueue(stageTotalBalls);
+    waveState={phase:stageWaveProfile.enabled?'idle':'legacy',waveIndex:0,totalWaves:activeGameMode==='survival'?Infinity:(stageWaveProfile.enabled?Math.ceil(stageTotalBalls/stageWaveProfile.waveSize):1),remaining:0,timer:0,connected:false,rumbleStarted:false,preExistingIds:new Set()};
+    segments=[];
+    projectiles=[];
+    currentColor=randomAmmoColor();
+    nextColor=randomNextAmmoColor(currentColor);
+    shooterX=W*.5;
+    aimX=W*.5; aimY=H*.5; aimVisible=false;
+    fireCooldown=0;
+    paused=false; gameOver=false; cleared=false; clearPending=false;
+    shots=0; swaps=0; removed=0; chains=0; maxChain=0; chainDepth=0;
+    flashText=''; flashTimer=0;
+    matchBursts=[]; smokeEffects=[]; specialNotices=[]; shooterRecoil=0; shooterRecoilV=0;
+    nextMarbleId=1;
+    effectTimers={back:0, slow:0, shotFast:0, driveFast:0, shotSlow:0};
+    scoreState=newScoreState();scorePopups=[];displayScore=0;nextShotId=1;shotRecords=new Map();safetyOriginS=null;safetySequence=null;outPulse=0;resultShown=false;waveClearBonus=null;waveClearOriginS=null;
+    campaignResultLevelIndex=-1;campaignResultNextIndex=-1;campaignResultWasHighScore=false;survivalResultWasRecord=false;
+    if(stageWaveProfile.enabled)beginNextWave();else spawnFirst();
+    lastTime=performance.now();
+    pauseBtn.textContent='Ⅱ';
+  }
+
+  function makeMarble(color,s,special=null,waveId=0) {
+    return {id:nextMarbleId++, color, s, special, waveId, visualOffset:0, visualVelocity:0};
+  }
+
+  // ---------- Endgame ammo color filter ----------
+  // While queued marbles still remain outside the board, ammo may use any stage color.
+  // Once every scheduled marble has entered the lane, CURRENT/NEXT are restricted to
+  // colors that still exist on lane marbles. This prevents unwinnable-feeling dead
+  // colors from occupying the launcher late in the stage.
+  function laneColorPool() {
+    const present=new Array(activeColorCount).fill(false);
+    for (const seg of segments) {
+      for (const m of seg.marbles) {
+        if (Number.isInteger(m.color) && m.color>=0 && m.color<activeColorCount) {
+          present[m.color]=true;
+        }
+      }
+    }
+    const pool=[];
+    for (let i=0;i<present.length;i++) if (present[i]) pool.push(i);
+    return pool;
+  }
+
+  function randomAmmoColor() {
+    // Survival always has future WAVEs. Do not mistake the temporary empty queue
+    // between WAVEs for the campaign endgame. Newly added colors become eligible
+    // only when beginNextWave has generated the first WAVE for that color phase.
+    if(activeGameMode==='survival'&&survivalState)return Math.floor(rng()*survivalState.ammoColorCount);
+    if (spawnQueue.length===0) {
+      const pool=laneColorPool();
+      if (pool.length) return pool[Math.floor(rng()*pool.length)];
+    }
+    return Math.floor(rng()*activeColorCount);
+  }
+
+  function randomNextAmmoColor(current) {
+    let color=randomAmmoColor();
+    if(color===current)color=randomAmmoColor();
+    return color;
+  }
+
+  function sanitizeEndgameAmmo() {
+    if (activeGameMode==='survival'||spawnQueue.length!==0) return;
+    const pool=laneColorPool();
+    if (!pool.length) return;
+
+    if (!pool.includes(currentColor)) {
+      currentColor=pool[Math.floor(rng()*pool.length)];
+    }
+    if (!pool.includes(nextColor)) {
+      nextColor=pool[Math.floor(rng()*pool.length)];
+    }
+    if(nextColor===currentColor)nextColor=randomNextAmmoColor(currentColor);
+  }
+
+  function waveBoardSettled(){
+    return projectiles.length===0&&matchBursts.length===0&&smokeEffects.length===0&&!segments.some(seg=>seg.attracting);
+  }
+
+  function beginNextWave(){
+    if(activeGameMode==='survival'&&!spawnQueue.length){
+      spawnQueue=generateQueue(stageWaveProfile.waveSize);
+      // A color-level increase affects future WAVE generation first. Once that
+      // WAVE exists, the launcher may begin drawing from the expanded palette.
+      if(survivalState)survivalState.ammoColorCount=activeColorCount;
+    }
+    if(!stageWaveProfile.enabled||!spawnQueue.length)return false;
+    settleWaveClearBonus();waveClearBonus=null;waveClearOriginS=null;
+    const preExistingIds=new Set();for(const seg of segments)for(const marble of seg.marbles)preExistingIds.add(marble.id);
+    for(const seg of segments)seg.driven=false;
+    waveState.phase='deploying';waveState.waveIndex++;waveState.remaining=Math.min(stageWaveProfile.waveSize,spawnQueue.length);waveState.timer=0;waveState.connected=preExistingIds.size===0;waveState.rumbleStarted=false;waveState.preExistingIds=preExistingIds;
+    spawnFirst();
+    flashText=`WAVE ${waveState.waveIndex}`;flashTimer=.9;
+    return true;
+  }
+  function waveFeederSegment(){
+    // Only the driven IN-side fragment is the feeder. If a shot destroys that
+    // fragment, an OUT-side survivor from the same WAVE must not become a
+    // teleporting feed source; repairDriveInvariant will restart the feed at IN.
+    return segments.find(seg=>seg.driven&&seg.marbles.some(m=>m.waveId===waveState.waveIndex))||null;
+  }
+  function updateWaveRumbleSync(){
+    if(waveState.phase!=='deploying')return;
+    const feeder=waveFeederSegment();
+    let count=0,front=-Infinity;
+    if(feeder)for(const marble of feeder.marbles)if(marble.waveId===waveState.waveIndex){count++;front=Math.max(front,marble.s)}
+    const visiblyFlowing=front>=BALL_SPACING*1.25&&(count>=2||waveState.remaining===0);
+    if(visiblyFlowing&&!waveState.rumbleStarted){waveState.rumbleStarted=true;startWaveRumble()}
+    else if(!visiblyFlowing&&waveState.rumbleStarted){stopWaveRumble();waveState.rumbleStarted=false}
+  }
+  function updateWaveConnection(){
+    if(waveState.connected)return;
+    let oldMarbleExists=false,currentWaveExists=false;
+    for(const seg of segments)for(const marble of seg.marbles){if(waveState.preExistingIds.has(marble.id))oldMarbleExists=true;if(marble.waveId===waveState.waveIndex)currentWaveExists=true}
+    if(!currentWaveExists&&waveState.remaining===0){waveState.connected=true;return}
+    if(!waveFeederSegment()&&waveState.remaining===0){waveState.connected=true;return}
+    if(!oldMarbleExists){waveState.connected=true;return}
+    const joined=segments.some(seg=>{
+      let hasWave=false,hasOld=false;
+      for(const marble of seg.marbles){if(marble.waveId===waveState.waveIndex)hasWave=true;if(waveState.preExistingIds.has(marble.id))hasOld=true}
+      return hasWave&&hasOld;
+    });
+    if(joined){waveState.connected=true;sfxReconnect(Math.min(COLLISION_KICK_MAX,stageWaveProfile.deploymentSpeed*.34))}
+  }
+  function finishWaveDeployment(){
+    stopWaveRumble();waveState.phase=(activeGameMode==='survival'||spawnQueue.length)?'waiting':'complete';waveState.timer=stageWaveProfile.waveInterval;waveState.preExistingIds=new Set();
+    flashText='FIRE!';flashTimer=.45;
+  }
+  function beginWaveClearBonus(remainingSeconds){
+    if(waveClearBonus?.waveIndex===waveState.waveIndex||remainingSeconds<=0||(!spawnQueue.length&&activeGameMode!=='survival'))return;
+    const total=Math.max(0,Math.round(remainingSeconds*SCORE_RULES.waveClearPerSecond));
+    if(!total)return;
+    const origin=trackPos(clamp(waveClearOriginS??0,0,track.length));
+    waveClearBonus={waveIndex:waveState.waveIndex,total,awarded:0,elapsed:0,duration:Math.max(.05,Math.min(remainingSeconds,stageWaveProfile.emptyBoardInterval)),complete:false,x:origin.x,y:origin.y};
+  }
+  function settleWaveClearBonus(){
+    if(!waveClearBonus||waveClearBonus.complete)return;
+    const remainder=waveClearBonus.total-waveClearBonus.awarded;
+    if(remainder>0)addScore('waveClearBonus',remainder,{show:false});
+    waveClearBonus.awarded=waveClearBonus.total;waveClearBonus.complete=true;
+  }
+  function updateWaveClearBonus(dt){
+    if(!waveClearBonus||waveClearBonus.complete)return;
+    waveClearBonus.elapsed=Math.min(waveClearBonus.duration,waveClearBonus.elapsed+dt);
+    const target=Math.round(waveClearBonus.total*waveClearBonus.elapsed/waveClearBonus.duration);
+    const delta=target-waveClearBonus.awarded;
+    if(delta>0){addScore('waveClearBonus',delta,{show:false});waveClearBonus.awarded=target}
+    if(waveClearBonus.elapsed>=waveClearBonus.duration)settleWaveClearBonus();
+  }
+  function updateWaveState(dt){
+    if(!stageWaveProfile.enabled)return;
+    if(waveState.phase==='deploying'){
+      updateWaveConnection();
+      if(waveState.remaining>0||!waveState.connected)return;
+      const feeder=waveFeederSegment();
+      if(!feeder){finishWaveDeployment();return}
+      const target=stageWaveProfile.entryPaddingMarbles*BALL_SPACING;
+      const needed=target-rearS(feeder);
+      if(needed>0){
+        const delta=Math.min(needed,stageWaveProfile.deploymentSpeed*dt);
+        // Pressure propagates only through the physically connected feeder.
+        // Detached OUT-side islands stay still until the feeder actually reaches
+        // and merges with them on a later update.
+        for(const marble of feeder.marbles)marble.s+=delta;
+        return;
+      }
+      finishWaveDeployment();
+      return;
+    }
+    if(waveState.phase==='waiting'){
+      if(!segments.length&&(spawnQueue.length||activeGameMode==='survival'))beginWaveClearBonus(waveState.timer);
+      waveState.timer=Math.max(0,waveState.timer-dt);
+      if(!segments.length)waveState.timer=Math.min(waveState.timer,stageWaveProfile.emptyBoardInterval);
+      if(waveState.timer<=0){settleWaveClearBonus();waveState.phase='arming'}
+      return;
+    }
+    if(waveState.phase==='arming'&&waveBoardSettled())beginNextWave();
+  }
+
+  function spawnFirst() {
+    if (!spawnQueue.length) return;
+    if(stageWaveProfile.enabled&&(waveState.phase!=='deploying'||waveState.remaining<=0))return;
+    // If the IN-side driving chain was erased, a new chain starts at IN.
+    // Front segments remain stationary until this rear chain catches them.
+    if (!segments.length || !segments[0].driven) {
+      const marble=makeMarble(spawnQueue.shift(),0,null,stageWaveProfile.enabled?waveState.waveIndex:0);
+      segments.unshift({marbles:[marble], driven:true, attracting:false, attractSpeed:0,attractShotId:0});
+      if(stageWaveProfile.enabled)waveState.remaining--;
+      // If that was the final scheduled marble, CURRENT/NEXT must immediately
+      // stop offering colors that no longer exist anywhere on the lane.
+      sanitizeEndgameAmmo();
+    }
+  }
+
+  function rearS(seg) { return seg.marbles.length ? seg.marbles[0].s : Infinity; }
+  function frontS(seg) { return seg.marbles.length ? seg.marbles[seg.marbles.length-1].s : -Infinity; }
+
+  function spawnMore() {
+    if (!spawnQueue.length) return;
+    if(stageWaveProfile.enabled&&(waveState.phase!=='deploying'||waveState.remaining<=0))return;
+    if (!segments.length || !segments[0].driven) {
+      spawnFirst();
+      return;
+    }
+    const seg=stageWaveProfile.enabled?waveFeederSegment():segments[0];
+    if(!seg){spawnFirst();return}
+    if (seg.marbles.length && rearS(seg) >= BALL_SPACING) {
+      seg.marbles.unshift(makeMarble(spawnQueue.shift(),Math.max(0,rearS(seg)-BALL_SPACING),null,stageWaveProfile.enabled?waveState.waveIndex:0));
+      if(stageWaveProfile.enabled)waveState.remaining--;
+      // The exact frame in which the queue becomes empty is the transition into
+      // endgame ammo filtering. Invalid CURRENT/NEXT colors are rerolled now.
+      sanitizeEndgameAmmo();
+    }
+  }
+
+  // Maintain the one true forward-motion source. There are two distinct cases:
+  // 1) queued marbles still exist: a lost rear driver must be replaced at IN;
+  //    detached marbles ahead remain stationary until the new feed catches them.
+  // 2) every scheduled marble is already on the board: no replacement can come
+  //    from IN, so the IN-most surviving segment inherits the driver role.
+  // This distinction prevents both instant back-fill near IN and the endgame freeze.
+  function repairDriveInvariant(spawnImmediately=true) {
+    if(stageWaveProfile.enabled){
+      if(waveState.phase==='deploying'){
+        const feeder=waveFeederSegment();
+        if(feeder){for(const seg of segments)seg.driven=seg===feeder;return}
+        if(waveState.remaining>0&&spawnImmediately){
+          for(const seg of segments)seg.driven=false;
+          if(waveState.rumbleStarted){stopWaveRumble();waveState.rumbleStarted=false}
+          spawnFirst();return
+        }
+        return;
+      }
+      if(segments.some(s=>s.driven))return;
+      if(segments.length){segments[0].attracting=false;segments[0].attractSpeed=0;segments[0].driven=true}
+      return;
+    }
+    if (!segments.length) {
+      if (spawnQueue.length && spawnImmediately) spawnFirst();
+      return;
+    }
+    if (segments.some(s=>s.driven)) return;
+
+    const first=segments[0];
+    // With no rear segment, the first surviving island cannot keep being pulled
+    // toward a vanished partner.
+    first.attracting=false;
+    first.attractSpeed=0;
+
+    if (spawnQueue.length) {
+      // More marbles are still waiting outside the board. Start a genuine new
+      // rear chain at s=0; never promote the detached island itself.
+      if (spawnImmediately) spawnFirst();
+    } else {
+      // All marbles are already on screen. The IN-most surviving marble is now
+      // literally the rearmost marble in the game and must keep the train moving.
+      first.driven=true;
+    }
+  }
+
+  // ---------- Effect smoke ----------
+  function addSmokePuff(s,{count=3,spread=12,rMin=10,rMax=19,duration=.62,kind='smoke'}={}) {
+    const puffs=[];
+    for (let i=0;i<count;i++) {
+      puffs.push({
+        s:clamp(s+(Math.random()-.5)*BALL_SPACING*.32,0,track.length),
+        ox:(Math.random()-.5)*spread,
+        oy:(Math.random()-.5)*spread,
+        r:rMin+Math.random()*(rMax-rMin),
+        driftX:(Math.random()-.5)*22,
+        driftY:-12-Math.random()*34,
+        delay:Math.random()*.12
+      });
+    }
+    smokeEffects.push({age:0,duration,kind,puffs});
+  }
+
+  function spawnBombSmoke(erased,sourceS) {
+    // Fill the logical blast radius with smoke even where no marble happened to sit,
+    // so the player can read the BOMB's actual affected range at a glance.
+    const puffs=[];
+    const samples=Math.max(7,Math.ceil((BOMB_RADIUS*2)/BALL_SPACING)+2);
+    for (let i=0;i<samples;i++) {
+      const s=clamp(sourceS-BOMB_RADIUS+(BOMB_RADIUS*2)*(i/(samples-1)),0,track.length);
+      const reps=i===Math.floor(samples/2)?3:2;
+      for (let j=0;j<reps;j++) puffs.push({
+        s,
+        ox:(Math.random()-.5)*22,
+        oy:(Math.random()-.5)*22,
+        r:14+Math.random()*17,
+        driftX:(Math.random()-.5)*30,
+        driftY:-15-Math.random()*42,
+        delay:Math.random()*.10
+      });
+    }
+    smokeEffects.push({age:0,duration:.72,kind:'bomb',puffs});
+  }
+
+  function spawnWipeSmoke(erased) {
+    const puffs=[];
+    for (const m of erased) {
+      for (let j=0;j<3;j++) puffs.push({
+        s:m.s,
+        ox:(Math.random()-.5)*12,
+        oy:(Math.random()-.5)*12,
+        r:11+Math.random()*13,
+        driftX:(Math.random()-.5)*18,
+        driftY:-18-Math.random()*32,
+        delay:Math.random()*.08
+      });
+    }
+    smokeEffects.push({age:0,duration:.64,kind:'wipe',puffs});
+  }
+
+  // ---------- Special marble helpers ----------
+  function randomFrom(pool) { return pool[Math.floor(rng()*pool.length)]; }
+
+  function addSpecialNotice(s, kind, prefix='') {
+    const meta=SPECIAL_META[kind];
+    if (!meta) return;
+    specialNotices.push({s, text:`${prefix}${meta.label}`, polarity:meta.polarity, age:0, duration:1.05});
+  }
+
+  function currentDriveSpeed() {
+    if(stageWaveProfile.enabled&&waveState.phase==='deploying')return stageWaveProfile.deploymentSpeed;
+    // BACK has priority and uses the normal base speed in reverse.  This avoids
+    // positive SLOW or negative DRIVE FAST producing counter-intuitive changes
+    // to the strength of BACK while effects overlap.
+    if (effectTimers.back>0) return stageBaseSpeed;
+    let mult=1;
+    if (effectTimers.slow>0) mult*=SLOW_MULT;
+    if (effectTimers.driveFast>0) mult*=DRIVE_FAST_MULT;
+    return stageBaseSpeed*mult;
+  }
+
+  function currentShotSpeedMultiplier() {
+    let mult=stageProjectileSpeedScale;
+    if (effectTimers.shotFast>0) mult*=SHOT_FAST_MULT;
+    if (effectTimers.shotSlow>0) mult*=SHOT_SLOW_MULT;
+    return mult;
+  }
+
+  function boundaryKey(rearSeg,frontSeg) {
+    const a=rearSeg?.marbles?.[rearSeg.marbles.length-1];
+    const b=frontSeg?.marbles?.[0];
+    return a&&b ? `${a.id}:${b.id}` : '';
+  }
+
+  function boardOutmostS(){
+    let found=false,outmost=0;
+    for(const seg of segments)for(const marble of seg.marbles){found=true;outmost=Math.max(outmost,marble.s)}
+    return found?outmost:null;
+  }
+  function captureSafetyOriginIfCleared(outmostBeforeRemoval){
+    const boardEmpty=!segments.some(seg=>seg.marbles.length);
+    if(safetyOriginS===null&&outmostBeforeRemoval!==null&&spawnQueue.length===0&&boardEmpty)safetyOriginS=outmostBeforeRemoval;
+  }
+  function captureWaveClearOriginIfCleared(erased){
+    if(waveClearOriginS!==null||!erased?.length||segments.some(seg=>seg.marbles.length))return;
+    if(activeGameMode!=='survival'&&spawnQueue.length===0)return;
+    waveClearOriginS=erased.reduce((sum,marble)=>sum+marble.s,0)/erased.length;
+  }
+
+  // Remove marbles because of a special effect, NOT because of a color match.
+  // Specials carried by these destroyed marbles are intentionally ignored.
+  // The board is split into physical islands while preserving the motion state
+  // only on the surviving rear-most piece that still contains the original
+  // segment's first marble.  BOMB may arm newly-created gaps; WIPE may not.
+  function destroyByEffect(predicate,{armAttraction=false,kind='effect',sourceS=0}={}) {
+    const outmostBeforeRemoval=boardOutmostS();
+    const oldBoundaries=new Set();
+    for (let i=0;i<segments.length-1;i++) oldBoundaries.add(boundaryKey(segments[i],segments[i+1]));
+
+    const erased=[];
+    const rebuilt=[];
+    for (const seg of segments) {
+      const doomed=seg.marbles.map(m=>!!predicate(m));
+      if (!doomed.some(Boolean)) {
+        rebuilt.push(seg);
+        continue;
+      }
+
+      let i=0;
+      while (i<seg.marbles.length) {
+        if (doomed[i]) { erased.push(seg.marbles[i]); i++; continue; }
+        const start=i;
+        const run=[];
+        while (i<seg.marbles.length && !doomed[i]) { run.push(seg.marbles[i]); i++; }
+        const inheritsRearState=(start===0);
+        rebuilt.push({
+          marbles:run,
+          driven:inheritsRearState ? !!seg.driven : false,
+          attracting:inheritsRearState ? !!seg.attracting : false,
+          attractSpeed:inheritsRearState ? (seg.attractSpeed||0) : 0,
+          attractShotId:inheritsRearState ? (seg.attractShotId||0) : 0
+        });
+      }
+    }
+
+    if (!erased.length) return 0;
+    segments=rebuilt.filter(s=>s.marbles.length);
+    removed += erased.length;
+    for(const m of erased)popupAtS(m.s,`+${SCORE_RULES.effectMarble}`,{small:true,tone:'effect'});
+    addScore('specialClear',erased.length*SCORE_RULES.effectMarble,{show:false});
+    addMatchBurst(erased, kind==='bomb' ? 1.75 : 1.35, kind);
+    if (kind==='bomb') spawnBombSmoke(erased,sourceS);
+    else if (kind==='wipe') spawnWipeSmoke(erased);
+
+    // Do not spawn a replacement feed until we have decided which boundaries
+    // were actually created by this effect.
+    repairDriveInvariant(false);
+
+    if (armAttraction) {
+      for (let i=0;i<segments.length-1;i++) {
+        const key=boundaryKey(segments[i],segments[i+1]);
+        if (!oldBoundaries.has(key)) armGapAttraction(i);
+      }
+    }
+
+    repairDriveInvariant(true);
+    captureWaveClearOriginIfCleared(erased);
+    captureSafetyOriginIfCleared(outmostBeforeRemoval);
+    return erased.length;
+  }
+
+  function activateSpecial(kind,sourceColor,sourceS) {
+    const meta=SPECIAL_META[kind];
+    if (!meta) return;
+    addSpecialNotice(sourceS,kind,'ACTIVATE: ');
+
+    switch (kind) {
+      case 'bomb':
+        // Track-distance blast: visually circular, logically local along the rail.
+        sfxBomb();
+        destroyByEffect(m=>Math.abs(m.s-sourceS)<=BOMB_RADIUS,{armAttraction:true,kind:'bomb',sourceS});
+        break;
+      case 'colorWipe':
+        // Deliberately non-magnetic.  The wiped color disappears everywhere,
+        // but the new gaps do not arm attraction and destroyed specials stay inert.
+        sfxWipe();
+        destroyByEffect(m=>m.color===sourceColor,{armAttraction:false,kind:'wipe',sourceS});
+        break;
+      case 'back':
+        sfxPower(true);
+        effectTimers.back=Math.max(effectTimers.back,BACK_DURATION);
+        break;
+      case 'slow':
+        sfxPower(true);
+        effectTimers.slow=Math.max(effectTimers.slow,SLOW_DURATION);
+        break;
+      case 'shotFast':
+        sfxPower(true);
+        effectTimers.shotFast=Math.max(effectTimers.shotFast,SHOT_FAST_DURATION);
+        break;
+      case 'driveFast':
+        sfxPower(false);
+        effectTimers.driveFast=Math.max(effectTimers.driveFast,DRIVE_FAST_DURATION);
+        break;
+      case 'shotSlow':
+        sfxPower(false);
+        effectTimers.shotSlow=Math.max(effectTimers.shotSlow,SHOT_SLOW_DURATION);
+        break;
+    }
+  }
+
+  function grantChainBonus(originS) {
+    const candidates=[];
+    for (const seg of segments) for (const m of seg.marbles) {
+      if (!m.special) candidates.push(m);
+    }
+    if (!candidates.length) return;
+
+    candidates.sort((a,b)=>Math.abs(a.s-originS)-Math.abs(b.s-originS));
+    // Pick among a few nearby survivors so the reward feels connected to the
+    // chain location without always landing on exactly the same boundary marble.
+    const near=candidates.slice(0,Math.min(4,candidates.length));
+    const target=near[Math.floor(rng()*near.length)];
+    const kind=randomFrom(POWERUP_POOL);
+    target.special=kind;
+    addSpecialNotice(target.s,kind,'BONUS: ');
+  }
+
+  // ---------- Matching / chain logic ----------
+  function runAround(marbles, index) {
+    if (index<0 || index>=marbles.length) return null;
+    const c=marbles[index].color;
+    let a=index,b=index;
+    while (a>0 && marbles[a-1].color===c) a--;
+    while (b+1<marbles.length && marbles[b+1].color===c) b++;
+    return {a,b,count:b-a+1,color:c};
+  }
+
+  // Attraction is event-driven, not continuously scanned. Whenever a local
+  // color-check event fires, the detached boundaries next to the affected
+  // segment are eligible for inspection. If the two exposed end colors match,
+  // the OUT-side/front segment is magnetically pulled backward.
+  function armGapAttraction(boundaryIndex,shotId=0) {
+    if (boundaryIndex<0 || boundaryIndex>=segments.length-1) return false;
+    const rearSeg=segments[boundaryIndex];
+    const frontSeg=segments[boundaryIndex+1];
+    if (!rearSeg?.marbles.length || !frontSeg?.marbles.length) return false;
+    const rearColor=rearSeg.marbles[rearSeg.marbles.length-1].color;
+    const frontColor=frontSeg.marbles[0].color;
+    if (rearColor!==frontColor) return false;
+    if (!frontSeg.attracting) {
+      frontSeg.attracting=true;
+      frontSeg.attractSpeed=0;
+    }
+    if(shotId)frontSeg.attractShotId=shotId;
+    return true;
+  }
+
+  function armAdjacentGaps(segIndex,shotId=0) {
+    const rear=armGapAttraction(segIndex-1,shotId),front=armGapAttraction(segIndex,shotId);return rear||front;
+  }
+
+  function armGapsAroundSplice(segIndex, replacementCount,shotId=0) {
+    const first=Math.max(0,segIndex-1);
+    const last=Math.min(segments.length-2,segIndex+replacementCount);
+    for (let i=first;i<=last;i++) armGapAttraction(i,shotId);
+  }
+
+  function kickMarble(m, velocity) {
+    if (!m) return;
+    if (!Number.isFinite(m.visualOffset)) m.visualOffset=0;
+    if (!Number.isFinite(m.visualVelocity)) m.visualVelocity=0;
+    m.visualVelocity += velocity;
+  }
+
+  function clamp(v,a,b) { return Math.max(a,Math.min(b,v)); }
+
+  function matchKickForCount(count,chainLevel=1) {
+    // Treat disappearing mass AND chain depth as released virtual energy.
+    // A 3-clear at CHAIN x2 kicks like a normal 4-clear; CHAIN x3 like a
+    // normal 5-clear, and deeper chains continue climbing until the safety cap.
+    // This makes escalating chain recoil a deliberate reward signal.
+    const effectiveCount=count+Math.max(0,chainLevel-1);
+    const ratio=Math.max(1,effectiveCount/3);
+    return clamp(MATCH_KICK_3*Math.pow(ratio,MATCH_KICK_EXPONENT),
+                 MATCH_KICK_3,MATCH_KICK_MAX);
+  }
+
+  function segmentVelocity(seg) {
+    // Signed velocity along the track: + is IN→OUT, - is magnetic pull toward IN.
+    if (seg?.driven) return effectTimers.back>0 ? -currentDriveSpeed() : currentDriveSpeed();
+    if (seg?.attracting) return -(seg.attractSpeed||0);
+    return 0;
+  }
+
+  function insertionKick(p) {
+    const speed=Math.max(PROJECTILE_START_SPEED,p?.speed||PROJECTILE_START_SPEED);
+    return clamp(INSERT_KICK_MIN + (speed-PROJECTILE_START_SPEED)*INSERT_KICK_SPEED_SCALE,
+                 INSERT_KICK_MIN,INSERT_KICK_MAX);
+  }
+
+  function reconnectKick(rearSeg,frontSeg) {
+    // Virtual collision impulse: relative closing speed is the dominant factor,
+    // with a restrained mass term so a long train feels heavier without exploding.
+    const closingSpeed=Math.max(0,segmentVelocity(rearSeg)-segmentVelocity(frontSeg));
+    const m1=Math.max(1,rearSeg?.marbles?.length||1);
+    const m2=Math.max(1,frontSeg?.marbles?.length||1);
+    const reducedMass=(m1*m2)/(m1+m2);
+    const massFactor=0.88+0.13*Math.sqrt(Math.min(7,reducedMass));
+    return clamp(closingSpeed*COLLISION_KICK_SCALE*massFactor,
+                 COLLISION_KICK_MIN,COLLISION_KICK_MAX);
+  }
+
+  function addMatchBurst(marbles, power=1, kind='match') {
+    if (!marbles?.length) return;
+    matchBursts.push({
+      age:0, duration:.15+Math.min(.07,(power-1)*.035), power, kind,
+      balls:marbles.map(m=>({s:m.s,color:m.color,special:m.special||null}))
+    });
+  }
+
+  function removeRun(segIndex, a, b, isChain=false,shotId=0) {
+    const seg=segments[segIndex];
+    if (!seg) return;
+    const outmostBeforeRemoval=boardOutmostS();
+    const count=b-a+1;
+    removed += count;
+    if (isChain) {
+      chainDepth++;
+      chains++;
+      maxChain=Math.max(maxChain,chainDepth);
+      flashText=`CHAIN x${chainDepth}`;
+      flashTimer=.7;
+    } else {
+      chainDepth=1;
+      maxChain=Math.max(maxChain,1);
+      flashText=`MATCH ${count}`;
+      flashTimer=.5;
+    }
+
+    sfxMatch(count,isChain?chainDepth:1);
+
+    const erased=seg.marbles.slice(a,b+1);
+    const rear=seg.marbles.slice(0,a);
+    const front=seg.marbles.slice(b+1);
+    const replacement=[];
+    const centerS=erased.reduce((n,m)=>n+m.s,0)/Math.max(1,erased.length);
+    for(const m of erased)popupAtS(m.s,`+${SCORE_RULES.colorMarble}`,{small:true});
+    addScore('marbleClear',count*SCORE_RULES.colorMarble,{show:false});
+    if(shotId)markShotSuccess(shotId,trackPos(centerS).x,trackPos(centerS).y);
+    if(isChain){const award=chainAward(chainDepth);addScore('magneticChain',award,{x:trackPos(centerS).x,y:trackPos(centerS).y-28,label:`CHAIN ×${chainDepth}  +${award}`,tone:'chain'})}
+
+    // COLOR_MATCH is the only activation gate.  Snapshot specials before the
+    // marbles leave the board; effect-destruction paths never call this block.
+    const activations=erased
+      .filter(m=>m.special)
+      .map(m=>({kind:m.special,color:m.color,s:m.s}));
+
+    // The disappearing mass releases a visual-only impulse. Larger matches
+    // transfer more virtual force to the exposed ends (3 < 4 < 5 ...).
+    const recoilChainLevel=isChain ? chainDepth : 1;
+    const matchKick=matchKickForCount(count,recoilChainLevel);
+    const burstPower=matchKick/MATCH_KICK_3;
+    addMatchBurst(erased,burstPower,'match');
+    kickMarble(rear[rear.length-1], -matchKick);
+    kickMarble(front[0], matchKick);
+
+    if (rear.length) {
+      replacement.push({
+        marbles:rear,
+        driven:seg.driven,
+        attracting:seg.attracting,
+        attractSpeed:seg.attractSpeed || 0,
+        attractShotId:seg.attractShotId||shotId||0
+      });
+    }
+
+    if (front.length) {
+      // A color clear can expose two ends inside the same former segment.
+      const sameEnds = rear.length && rear[rear.length-1].color===front[0].color;
+      replacement.push({
+        marbles:front,
+        driven:false,
+        attracting:rear.length ? !!sameEnds : false,
+        attractSpeed:0,
+        attractShotId:sameEnds?(shotId||seg.attractShotId||0):0
+      });
+    }
+
+    segments.splice(segIndex,1,...replacement);
+
+    // Preserve the v0.9 queue/no-queue driver invariant before local magnetic
+    // boundary checks, but do not spawn a fresh IN marble until those checks end.
+    repairDriveInvariant(false);
+    armGapsAroundSplice(segIndex,replacement.length,shotId);
+    repairDriveInvariant(true);
+
+    // Activate specials only because THIS removal was a color match.  BOMB/WIPE
+    // can remove more specials, but destroyByEffect deliberately suppresses them.
+    for (const a of activations){addScore('specialActivate',SCORE_RULES.specialActivate,{x:trackPos(a.s).x,y:trackPos(a.s).y-24,label:`SPECIAL +${SCORE_RULES.specialActivate}`,tone:'special'});activateSpecial(a.kind,a.color,a.s)}
+
+    // Every magnetic chain clear is a reward event.  Grant the bonus after any
+    // immediate special effects so it is not accidentally erased by the same clear.
+    if (isChain) grantChainBonus(centerS);
+    captureWaveClearOriginIfCleared(erased);
+    captureSafetyOriginIfCleared(outmostBeforeRemoval);
+  }
+
+  function checkInsertionMatch(segIndex, index,shotId=0) {
+    const seg=segments[segIndex];
+    if (!seg) return;
+    const run=runAround(seg.marbles,index);
+    if (run && run.count>=3) {
+      removeRun(segIndex,run.a,run.b,false,shotId);
+    } else {
+      chainDepth=0;
+      // Even a non-clearing shot is still a local color-check event. If the
+      // shot created (or exposed) a same-color boundary across a pre-existing
+      // gap, arm that attraction. This covers both shooting the rear segment
+      // toward the gap and shooting the detached front segment at its rear end.
+      armAdjacentGaps(segIndex,shotId);
+    }
+  }
+
+  function mergeTouchingSegments() {
+    // Segments are ordered IN -> OUT. A driven rear segment may catch a
+    // stationary front segment; an attracting front segment may also move
+    // backward. Only an attraction-created reconnection can trigger a chain.
+    for (let pass=0; pass<6; pass++) {
+      let mergedAny=false;
+      for (let i=1;i<segments.length;i++) {
+        const rearSeg=segments[i-1];
+        const frontSeg=segments[i];
+        const gap=rearS(frontSeg)-frontS(rearSeg);
+        if (gap > BALL_SPACING) continue;
+
+        const magneticReconnect=frontSeg.attracting;
+        const reconnectShotId=frontSeg.attractShotId||0;
+        const rearEdge=rearSeg.marbles[rearSeg.marbles.length-1];
+        const frontEdge=frontSeg.marbles[0];
+
+        // Calculate impact BEFORE merging, while each segment still carries its own
+        // velocity. A fast magnetic return therefore hits much harder than a slow
+        // passive catch-up; group size contributes a smaller virtual-mass factor.
+        const impact=reconnectKick(rearSeg,frontSeg);
+        kickMarble(rearEdge,-impact);
+        kickMarble(frontEdge, impact);
+        if (magneticReconnect) sfxReconnect(impact);
+        const rearCount=rearSeg.marbles.length;
+        const target=frontS(rearSeg)+BALL_SPACING;
+        const delta=target-rearS(frontSeg);
+        for (const m of frontSeg.marbles) m.s += delta;
+
+        const merged={
+          marbles:rearSeg.marbles.concat(frontSeg.marbles),
+          driven:rearSeg.driven || frontSeg.driven,
+          attracting:rearSeg.attracting,
+          attractSpeed:rearSeg.attractSpeed || 0,
+          attractShotId:rearSeg.attractShotId||0
+        };
+        segments.splice(i-1,2,merged);
+
+        if (magneticReconnect) {
+          // Reconnection match must cross the exact gap boundary. The check
+          // itself is also a trigger that may arm the next detached gap.
+          const boundary=rearCount;
+          let clearedOnReconnect=false;
+          if (boundary>0 && boundary<merged.marbles.length &&
+              merged.marbles[boundary-1].color===merged.marbles[boundary].color) {
+            const run=runAround(merged.marbles,boundary);
+            if (run && run.count>=3 && run.a<boundary && run.b>=boundary) {
+              removeRun(i-1,run.a,run.b,true,reconnectShotId);
+              clearedOnReconnect=true;
+            } else {
+              chainDepth=0;
+            }
+          } else {
+            chainDepth=0;
+          }
+          if (!clearedOnReconnect) {
+            // No clear occurred, but the reconnection's local color check still
+            // gets to inspect neighboring detached boundaries.
+            armAdjacentGaps(i-1,reconnectShotId);
+            markShotFailure(reconnectShotId);
+          }
+        } else {
+          // Passive catch-up is only physical reconnection. Even if the colors
+          // happen to match, it is not a match-check event.
+          chainDepth=0;
+        }
+
+        mergedAny=true;
+        break;
+      }
+      if (!mergedAny) break;
+    }
+  }
+
+  function resolveCompression(seg, dt) {
+    const maxPush=INSERT_PUSH_SPEED*dt;
+    // Two passes make the insertion wave propagate smoothly but quickly.
+    for (let pass=0;pass<2;pass++) {
+      for (let i=1;i<seg.marbles.length;i++) {
+        const prev=seg.marbles[i-1], cur=seg.marbles[i];
+        const need=prev.s+BALL_SPACING-cur.s;
+        if (need>0) cur.s += Math.min(need,maxPush);
+      }
+    }
+  }
+
+  // ---------- Shooter / projectiles ----------
+  const shooterY=674, shooterCurrentOffsetY=-27;
+  const swapRect={x:W/2-34,y:632,w:68,h:74};
+
+  function swapAmmo() {
+    const t=currentColor; currentColor=nextColor; nextColor=t;
+    swaps++;
+    flashText='SWAP'; flashTimer=.25;
+  }
+  function shotTemporarilyBlocked(){return clearPending||!!safetySequence||waveState.phase==='arming'}
+
+  function fire(x=shooterX, targetX=x, targetY=0, touchMode=false) {
+    if (paused || gameOver || cleared || shotTemporarilyBlocked() || fireCooldown>0) return;
+    shooterX=Math.max(28,Math.min(W-28,x));
+    let dx=0,dy=-1;
+    if (touchMode) {
+      dx=targetX-shooterX; dy=targetY-(shooterY+shooterCurrentOffsetY);
+      const len=Math.hypot(dx,dy);
+      if (len<4 || dy>=0) { dx=0;dy=-1; }
+      else { dx/=len;dy/=len; }
+    }
+    const shotMult=currentShotSpeedMultiplier();
+    const shotId=nextShotId++;
+    projectiles.push({
+      x:shooterX,y:shooterY+shooterCurrentOffsetY, dirx:dx,diry:dy,
+      speed:PROJECTILE_START_SPEED*shotMult,
+      maxSpeed:PROJECTILE_MAX_SPEED*shotMult,
+      accel:PROJECTILE_ACCEL*shotMult,
+      color:currentColor,r:BALL_R-2,shotId,gaps:0,narrowest:Infinity,passedGapKeys:new Set()
+    });
+    shotRecords.set(shotId,{id:shotId,resolved:false,success:false,gaps:0,narrowest:Infinity});
+    sfxShot();
+    shooterRecoilV += 135;
+    currentColor=nextColor;
+    nextColor=randomNextAmmoColor(currentColor);
+    shots++;
+    fireCooldown=FIRE_COOLDOWN;
+  }
+
+  function insertProjectile(p, segIndex, marbleIndex) {
+    const seg=segments[segIndex];
+    const hit=seg.marbles[marbleIndex];
+    const center=trackPos(hit.s);
+    const tan=trackTangent(hit.s);
+    const relx=p.x-center.x, rely=p.y-center.y;
+    const frontSide=(relx*tan.x+rely*tan.y)>=0;
+    const insertIndex=frontSide ? marbleIndex+1 : marbleIndex;
+
+    // Remember the packed neighbors before opening the slot. If the shot does
+    // not clear, they receive a visual-only wedge impulse based on impact speed.
+    const rearNeighbor=insertIndex>0 ? seg.marbles[insertIndex-1] : null;
+    const frontNeighbor=insertIndex<seg.marbles.length ? seg.marbles[insertIndex] : null;
+
+    let s;
+    if (insertIndex===0) {
+      s=Math.max(0,seg.marbles[0].s-BALL_SPACING);
+    } else {
+      s=seg.marbles[insertIndex-1].s+BALL_SPACING;
+    }
+    const splitShot=!!(rearNeighbor && frontNeighbor &&
+      rearNeighbor.color===frontNeighbor.color && p.color!==rearNeighbor.color);
+
+    sfxInsert(p.speed||PROJECTILE_START_SPEED);
+    const inserted=makeMarble(p.color,s);
+    seg.marbles.splice(insertIndex,0,inserted);
+
+    const run=runAround(seg.marbles,insertIndex);
+    if (run && run.count>=3) {
+      // Match recoil is handled by removeRun(), where force scales with the
+      // number of marbles erased. Do not stack a wedge kick on top of it.
+      removeRun(segIndex,run.a,run.b,false,p.shotId);
+    } else {
+      chainDepth=0;
+      const impact=insertionKick(p);
+      kickMarble(rearNeighbor,-impact);
+      kickMarble(frontNeighbor, impact);
+      // The inserted marble itself settles very slightly in the opposite sense,
+      // making the packed row read as a short compression/rebound rather than
+      // two unrelated balls twitching apart.
+      kickMarble(inserted,(frontSide ? -1 : 1)*impact*.18);
+
+      // A-B-A is an explicit mistake pattern: a different color has split a
+      // matching pair/run.  The inserted B becomes a penalty marble with a
+      // deterministic RNG chance; the penalty itself waits until B is later
+      // removed by a color match.
+      if (splitShot && rng()<POWERDOWN_CHANCE) {
+        const kind=randomFrom(POWERDOWN_POOL);
+        inserted.special=kind;
+        sfxPenaltySeed();
+        addSpecialNotice(inserted.s,kind,'PENALTY: ');
+      }
+
+      if(!armAdjacentGaps(segIndex,p.shotId))markShotFailure(p.shotId);
+    }
+  }
+
+  function pointSegmentDistance(px,py,a,b) {
+    const vx=b.x-a.x,vy=b.y-a.y,den=vx*vx+vy*vy||1;
+    const t=clamp(((px-a.x)*vx+(py-a.y)*vy)/den,0,1);
+    return Math.hypot(px-(a.x+vx*t),py-(a.y+vy*t));
+  }
+  function trackSlicePoints(centerS,halfLength=CROSSING_OCCLUSION_HALF_LENGTH,step=6) {
+    const a=clamp(centerS-halfLength,0,track.length),b=clamp(centerS+halfLength,0,track.length);
+    const n=Math.max(2,Math.ceil((b-a)/step));
+    const pts=[];
+    for(let i=0;i<=n;i++)pts.push(trackPos(a+(b-a)*(i/n)));
+    return pts;
+  }
+  function lowerPassOccluded(s) {
+    return stageCrossings.some(c=>Math.abs(s-c.lowerS)<CROSSING_OCCLUSION_HALF_LENGTH);
+  }
+  // Crossing rails are NOT projectile blockers. Empty rail is always shoot-through.
+  // Lower-pass marbles are made untargetable by lowerPassOccluded() instead.
+  // Kept as a geometry helper for debugging only.
+  function crossingBlocksProjectile(x,y,pad=0) {
+    for(const c of stageCrossings){
+      const pts=trackSlicePoints(c.upperS);
+      for(let i=1;i<pts.length;i++){
+        if(pointSegmentDistance(x,y,pts[i-1],pts[i])<=TRACK_OUTER_WIDTH/2+pad)return true;
+      }
+    }
+    return false;
+  }
+  function obstacleBlocksProjectile(x,y,pad=0) {
+    for(const o of stageObstacles){
+      if(o.type==='circle'){
+        if(Math.hypot(x-o.x,y-o.y)<=o.r+pad)return true;
+      }else{
+        const dx=Math.max(Math.abs(x-o.x)-o.w/2,0),dy=Math.max(Math.abs(y-o.y)-o.h/2,0);
+        if(Math.hypot(dx,dy)<=pad)return true;
+      }
+    }
+    return false;
+  }
+  function openGapIntervals(){
+    const occupied=[];for(const seg of segments){if(seg.marbles.length)occupied.push({a:rearS(seg)-BALL_R,b:frontS(seg)+BALL_R})}
+    occupied.sort((a,b)=>a.a-b.a);const gaps=[];
+    for(let i=1;i<occupied.length;i++){const a=occupied[i-1].b,b=occupied[i].a;if(b-a>BALL_R*1.35)gaps.push({a,b,key:`${Math.round(a)}:${Math.round(b)}`})}
+    return gaps;
+  }
+  function recordProjectileGaps(p,oldX,oldY,newX,newY){
+    for(const g of openGapIntervals()){
+      const mid=(g.a+g.b)/2,pos=trackPos(mid),d=pointSegmentDistance(pos.x,pos.y,{x:oldX,y:oldY},{x:newX,y:newY});
+      if(d<=BALL_R*.72&&!p.passedGapKeys.has(g.key)){p.passedGapKeys.add(g.key);p.gaps++;p.narrowest=Math.min(p.narrowest,g.b-g.a);const r=shotRecord(p.shotId);if(r){r.gaps=p.gaps;r.narrowest=p.narrowest}}
+    }
+  }
+
+  function updateProjectiles(dt) {
+    for (let pi=projectiles.length-1;pi>=0;pi--) {
+      const p=projectiles[pi];
+      const oldX=p.x, oldY=p.y;
+      p.speed=Math.min(p.maxSpeed||PROJECTILE_MAX_SPEED,p.speed+(p.accel||PROJECTILE_ACCEL)*dt);
+      p.x += p.dirx*p.speed*dt; p.y += p.diry*p.speed*dt;
+      recordProjectileGaps(p,oldX,oldY,p.x,p.y);
+
+      let hit=null,blocked=false;
+      // Micro-step along the projectile path to avoid tunneling at high speed.
+      const dist=Math.hypot(p.x-oldX,p.y-oldY);
+      const steps=Math.max(1,Math.ceil(dist/8));
+      outer:
+      for (let step=1;step<=steps;step++) {
+        const t=step/steps;
+        const sx=oldX+(p.x-oldX)*t, sy=oldY+(p.y-oldY)*t;
+        for (let si=0;si<segments.length;si++) {
+          const seg=segments[si];
+          for (let mi=0;mi<seg.marbles.length;mi++) {
+            const m=seg.marbles[mi];
+            if (m.s<0 || m.s>track.length) continue;
+            // A lower-pass marble physically exists but cannot be shot through the bridge.
+            if (lowerPassOccluded(m.s)) continue;
+            const pos=trackPos(m.s);
+            const rr=BALL_R+p.r-2;
+            const dx=sx-pos.x, dy=sy-pos.y;
+            if (dx*dx+dy*dy <= rr*rr) {
+              p.x=sx; p.y=sy;
+              hit={si,mi};
+              break outer;
+            }
+          }
+        }
+        if (!hit && obstacleBlocksProjectile(sx,sy,p.r)) {
+          p.x=sx;p.y=sy;blocked=true;break outer;
+        }
+      }
+      if (hit) {
+        insertProjectile(p,hit.si,hit.mi);
+        projectiles.splice(pi,1);
+      } else if (blocked) {
+        markShotFailure(p.shotId);
+        projectiles.splice(pi,1);
+      } else if (p.y<-30 || p.y>H+30 || p.x<-30 || p.x>W+30) {
+        markShotFailure(p.shotId);
+        projectiles.splice(pi,1);
+      }
+    }
+  }
+
+  function updateVisualPhysics(dt) {
+    // Damped spring for marble recoil. Logical collision/match positions are not
+    // affected, so visual weight cannot destabilize the chain rules.
+    for (const seg of segments) {
+      for (const m of seg.marbles) {
+        if (!Number.isFinite(m.visualOffset)) m.visualOffset=0;
+        if (!Number.isFinite(m.visualVelocity)) m.visualVelocity=0;
+        if (Math.abs(m.visualOffset)>.001 || Math.abs(m.visualVelocity)>.001) {
+          const a=-VISUAL_SPRING*m.visualOffset - VISUAL_DAMPING*m.visualVelocity;
+          m.visualVelocity += a*dt;
+          m.visualOffset += m.visualVelocity*dt;
+          if (Math.abs(m.visualOffset)<.02 && Math.abs(m.visualVelocity)<.15) {
+            m.visualOffset=0; m.visualVelocity=0;
+          }
+        }
+      }
+    }
+
+    // Launcher body recoils downward and springs back after each heavy shot.
+    const recoilA=-155*shooterRecoil - 19*shooterRecoilV;
+    shooterRecoilV += recoilA*dt;
+    shooterRecoil += shooterRecoilV*dt;
+    shooterRecoil=Math.max(-1,Math.min(10,shooterRecoil));
+    if (Math.abs(shooterRecoil)<.02 && Math.abs(shooterRecoilV)<.15) {
+      shooterRecoil=0; shooterRecoilV=0;
+    }
+
+    for (let i=matchBursts.length-1;i>=0;i--) {
+      matchBursts[i].age += dt;
+      if (matchBursts[i].age>=matchBursts[i].duration) matchBursts.splice(i,1);
+    }
+    for (let i=smokeEffects.length-1;i>=0;i--) {
+      smokeEffects[i].age += dt;
+      if (smokeEffects[i].age>=smokeEffects[i].duration) smokeEffects.splice(i,1);
+    }
+    for (let i=specialNotices.length-1;i>=0;i--) {
+      specialNotices[i].age += dt;
+      if (specialNotices[i].age>=specialNotices[i].duration) specialNotices.splice(i,1);
+    }
+    for(let i=scorePopups.length-1;i>=0;i--){scorePopups[i].age+=dt;if(scorePopups[i].age>=scorePopups[i].duration)scorePopups.splice(i,1)}
+    displayScore += (scoreValue()-displayScore)*Math.min(1,dt*10);
+    if(Math.abs(scoreValue()-displayScore)<.5)displayScore=scoreValue();
+    outPulse=Math.max(0,outPulse-dt);
+  }
+
+  function beginSafetySequence(){
+    const first=clamp(safetyOriginS??0,0,track.length);
+    safetySequence={nextS:first,timer:.03,done:false,finishTimer:0};
+    clearPending=true;projectiles=[];
+  }
+  function forceStageClear(){
+    if(activeGameMode==='survival')return;
+    if(shellScreen!=='playing'||paused||gameOver||cleared||clearPending)return;
+    settleWaveClearBonus();waveClearBonus=null;safetyOriginS=boardOutmostS();stopWaveRumble();
+    spawnQueue=[];segments=[];projectiles=[];matchBursts=[];smokeEffects=[];
+    waveState.phase=stageWaveProfile.enabled?'complete':'legacy';waveState.remaining=0;waveState.timer=0;waveState.preExistingIds=new Set();
+    flashText='FORCE CLEAR';flashTimer=.8;beginSafetySequence();
+  }
+  function updateSafetySequence(dt){
+    const q=safetySequence;if(!q||q.done)return;
+    q.timer-=dt;
+    let emitted=0;
+    while(q.timer<=0&&q.nextS<track.length-1){
+      const p=trackPos(q.nextS);addScore('safetyBonus',SCORE_RULES.safetyUnit,{x:p.x,y:p.y,label:String(SCORE_RULES.safetyUnit),tone:'safety',small:true});sfxSafetyTick(emitted*.01375);emitted++;q.nextS+=BALL_SPACING;q.timer+=.01375;
+    }
+    if(q.nextS>=track.length-1){
+      if(!q.finishTimer){outPulse=.75;q.finishTimer=.7;sfxBomb();const p=trackPos(track.length);scorePopups.push({x:p.x,y:p.y,text:'SAFETY BONUS',age:0,duration:1.0,tone:'safety',small:false})}
+      q.finishTimer-=dt;
+      if(q.finishTimer<=0){q.done=true;cleared=true;clearPending=false;flashText='STAGE CLEAR';flashTimer=999;displayScore=scoreValue()}
+    }
+  }
+
+  // ---------- Update ----------
+  function update(dt) {
+    if (paused || gameOver || cleared) return;
+    if(safetySequence){updateSafetySequence(dt);updateVisualPhysics(dt);return}
+    updateSurvivalDifficulty(dt);
+    fireCooldown=Math.max(0,fireCooldown-dt);
+    flashTimer=Math.max(0,flashTimer-dt);
+    for (const k of Object.keys(effectTimers)) effectTimers[k]=Math.max(0,effectTimers[k]-dt);
+    // Safety net before motion: there must be exactly one effective rear driver
+    // whenever living marbles can still advance. The queue/no-queue distinction
+    // decides whether that driver is born at IN or inherited by a survivor.
+    repairDriveInvariant(true);
+
+    for (let i=0;i<segments.length;i++) {
+      const seg=segments[i];
+      if (seg.driven) {
+        seg.attractSpeed=0;
+        if (seg.marbles.length) {
+          const driveSpeed=currentDriveSpeed();
+          if (effectTimers.back>0) {
+            // BACK moves the whole connected driven train as one body.  Merely
+            // moving the rear ball would create an artificial gap because the
+            // normal forward model is push-only.  Clamp at the IN mouth.
+            let delta=-driveSpeed*dt;
+            if (rearS(seg)+delta<0) delta=-rearS(seg);
+            for (const m of seg.marbles) m.s += delta;
+          } else {
+            // Normal forward motion remains push-driven by the rearmost marble.
+            seg.marbles[0].s += driveSpeed*dt;
+          }
+        }
+      } else if (seg.attracting) {
+        // A detached mass starts almost at rest, then accelerates backward.
+        // That short ramp is what makes attraction feel heavy instead of robotic.
+        seg.attractSpeed=Math.min(RETRACT_MAX_SPEED,(seg.attractSpeed||0)+RETRACT_ACCEL*dt);
+        for (const m of seg.marbles) m.s -= seg.attractSpeed*dt;
+      } else {
+        seg.attractSpeed=0;
+      }
+      resolveCompression(seg,dt);
+    }
+
+    mergeTouchingSegments();
+    spawnMore();
+    updateWaveRumbleSync();
+    updateWaveState(dt);
+    updateWaveClearBonus(dt);
+    updateProjectiles(dt);
+    updateVisualPhysics(dt);
+
+    // Remove accidental empty segments if any, then repair the drive source.
+    // If queued balls remain this may start a new chain at IN; if the queue is
+    // exhausted it promotes the IN-most surviving segment instead.
+    segments=segments.filter(s=>s.marbles.length>0);
+    repairDriveInvariant(true);
+
+    // After the queue is exhausted, a match / BOMB / WIPE may eliminate the last
+    // lane marble of a color. Scrub that color from CURRENT/NEXT before this frame
+    // is drawn, so the launcher never visibly keeps an extinct color.
+    sanitizeEndgameAmmo();
+
+    for (const seg of segments) {
+      if (seg.marbles.some(m=>m.s>=track.length-4)) {
+        gameOver=true;
+        flashText='GAME OVER'; flashTimer=999;
+        break;
+      }
+    }
+
+    if (activeGameMode!=='survival'&&!gameOver && spawnQueue.length===0 && segments.length===0) {
+      // The logical board may be empty while the last marbles are still visibly
+      // shrinking/bursting. Enter a short pending state first: stop accepting
+      // new shots, discard irrelevant in-flight shots, and let visual effects
+      // finish before showing STAGE CLEAR.
+      if (!clearPending) {clearPending=true;projectiles=[]}
+      if (matchBursts.length===0 && smokeEffects.length===0) {
+        beginSafetySequence();
+      }
+    } else if (!cleared) {
+      clearPending=false;
+    }
+  }
+
+  // ---------- Drawing ----------
+  function roundedRect(x,y,w,h,r) {
+    ctx.beginPath();
+    ctx.roundRect(x,y,w,h,r);
+  }
+
+  function drawTrack() {
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath();
+    ctx.moveTo(track.pts[0].x,track.pts[0].y);
+    for (let i=1;i<track.pts.length;i++) ctx.lineTo(track.pts[i].x,track.pts[i].y);
+    ctx.strokeStyle='#05080d'; ctx.lineWidth=TRACK_OUTER_WIDTH; ctx.stroke();
+    ctx.strokeStyle='#26313f'; ctx.lineWidth=TRACK_MID_WIDTH; ctx.stroke();
+    ctx.strokeStyle='#111923'; ctx.lineWidth=TRACK_INNER_WIDTH; ctx.stroke();
+    ctx.setLineDash([5,11]);
+    ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  function drawEndpoints() {
+    const start=trackPos(0), end=trackPos(track.length);
+    ctx.save();
+    ctx.fillStyle='#080b10'; ctx.strokeStyle='#56677d'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(start.x,start.y,22,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#a8b4c5'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText('IN',start.x,start.y+4);
+    ctx.fillStyle='#030507'; ctx.strokeStyle='#9a4b4b'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(end.x,end.y,25,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#c88'; ctx.fillText('OUT',end.x,end.y+4);
+    ctx.restore();
+  }
+
+  function drawBall(x,y,colorIndex,r=BALL_R,alpha=1,scale=1) {
+    const c=COLORS[colorIndex];
+    r*=scale;
+    ctx.save(); ctx.globalAlpha=alpha;
+
+    // Soft contact shadow makes the marble read as a heavy object sitting in a
+    // channel rather than a flat colored disc.
+    ctx.shadowColor='rgba(0,0,0,.58)';
+    ctx.shadowBlur=Math.max(3,r*.26);
+    ctx.shadowOffsetY=Math.max(2,r*.12);
+    const g=ctx.createRadialGradient(x-r*.34,y-r*.40,r*.08,x+r*.08,y+r*.08,r*1.04);
+    g.addColorStop(0,c.hi);
+    g.addColorStop(.22,c.fill);
+    g.addColorStop(.70,c.fill);
+    g.addColorStop(1,c.edge);
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+
+    ctx.shadowColor='transparent';
+    ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=Math.max(1.5,r*.075); ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,.22)'; ctx.lineWidth=Math.max(1,r*.05);
+    ctx.beginPath(); ctx.arc(x,y,r*.79,.12*Math.PI,.88*Math.PI); ctx.stroke();
+
+    ctx.fillStyle='rgba(255,255,255,.32)';
+    ctx.beginPath(); ctx.arc(x-r*.30,y-r*.34,r*.12,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSpecialBadge(x,y,kind,r=BALL_R,alpha=1,scale=1) {
+    if (!kind || !SPECIAL_META[kind]) return;
+    const meta=SPECIAL_META[kind];
+    const rr=r*scale;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle='rgba(5,8,12,.72)';
+    ctx.strokeStyle=meta.polarity==='down' ? '#ff6f8d' : '#ffe17a';
+    ctx.lineWidth=Math.max(1.6,rr*.085);
+    ctx.beginPath(); ctx.arc(x,y,rr*.48,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=meta.polarity==='down' ? '#ff9bb0' : '#fff0a6';
+    const len=meta.icon.length;
+    ctx.font=`800 ${Math.max(8,rr*(len>1?.38:.58))}px system-ui`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(meta.icon,x,y+.5);
+    ctx.restore();
+  }
+
+  function strokeTrackPolyline(points,withCenterDash=true,lineCap='round',dashOffset=0) {
+    if(!points||points.length<2)return;
+    ctx.save();
+    ctx.lineCap=lineCap;ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(points[0].x,points[0].y);
+    for(let i=1;i<points.length;i++)ctx.lineTo(points[i].x,points[i].y);
+    ctx.strokeStyle='#05080d';ctx.lineWidth=TRACK_OUTER_WIDTH;ctx.stroke();
+    ctx.strokeStyle='#26313f';ctx.lineWidth=TRACK_MID_WIDTH;ctx.stroke();
+    ctx.strokeStyle='#111923';ctx.lineWidth=TRACK_INNER_WIDTH;ctx.stroke();
+    if(withCenterDash){
+      ctx.setLineDash([5,11]);
+      ctx.lineDashOffset=dashOffset;
+      ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=2;ctx.stroke();
+      ctx.setLineDash([]);ctx.lineDashOffset=0;
+    }
+    ctx.restore();
+  }
+
+  function upperCompositeHalfLength(){
+    return CROSSING_COMPOSITE_RADIUS;
+  }
+  function marbleNeedsUpperLayer(m){
+    const s=m.s+(m.visualOffset||0);
+    return stageCrossings.some(c=>Math.abs(s-c.upperS)<=upperCompositeHalfLength()+CROSSING_MARBLE_LAYER_PAD);
+  }
+
+  function clipCrossingNeighborhood(c){
+    const center=trackPos(c.upperS);
+    ctx.beginPath();
+    ctx.arc(center.x,center.y,CROSSING_COMPOSITE_RADIUS,0,Math.PI*2);
+    ctx.clip();
+  }
+
+  function drawCrossingBridges() {
+    for(const c of stageCrossings){
+      // Composite only the crossing neighborhood.  The upper lane stroke is
+      // sampled far beyond the clip circle, so its line caps are never visible.
+      // Outside the clip the ordinary full-track rendering remains untouched;
+      // inside it the exact same upper lane is simply painted last, producing
+      // an over/under crossing with no independent plate and no seam endpoints.
+      const half=CROSSING_OVERDRAW_HALF_LENGTH;
+      const startS=clamp(c.upperS-half,0,track.length);
+      const pts=trackSlicePoints(c.upperS,half,3);
+      if(pts.length<2)continue;
+      const dashPeriod=16; // 5 + 11 from drawTrack()
+      ctx.save();
+      clipCrossingNeighborhood(c);
+      strokeTrackPolyline(pts,true,'butt',-(startS%dashPeriod));
+      ctx.restore();
+    }
+  }
+
+  function drawUpperCrossingMarbles() {
+    if(!stageCrossings.length)return;
+    for(const seg of segments){
+      for(const m of seg.marbles){
+        if(m.s<0||m.s>track.length)continue;
+        if(!marbleNeedsUpperLayer(m))continue;
+        const p=trackPos(m.s+(m.visualOffset||0));
+        drawBall(p.x,p.y,m.color,BALL_R);
+        drawSpecialBadge(p.x,p.y,m.special,BALL_R);
+      }
+    }
+  }
+  function drawStageObstacles() {
+    for(const o of stageObstacles){
+      ctx.save();
+      const g=ctx.createLinearGradient(o.x-30,o.y-30,o.x+30,o.y+30);g.addColorStop(0,'#747c86');g.addColorStop(1,'#303944');
+      ctx.fillStyle=g;ctx.strokeStyle='#9aa5b2';ctx.lineWidth=2;ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=8;ctx.shadowOffsetY=4;
+      if(o.type==='circle'){ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();ctx.stroke()}
+      else{ctx.beginPath();ctx.roundRect(o.x-o.w/2,o.y-o.h/2,o.w,o.h,11);ctx.fill();ctx.stroke()}
+      ctx.restore();
+    }
+  }
+
+  function drawMarbles() {
+    // Base marble layer.  Upper-pass marbles are deliberately omitted here and
+    // rendered only after the overpass lane, so they never dive under their own
+    // crossing for a frame/partial diameter before being redrawn on top.
+    for (const seg of segments) {
+      for (const m of seg.marbles) {
+        if (m.s<0 || m.s>track.length) continue;
+        if (marbleNeedsUpperLayer(m)) continue;
+        const p=trackPos(m.s+(m.visualOffset||0));
+        drawBall(p.x,p.y,m.color,BALL_R);
+        drawSpecialBadge(p.x,p.y,m.special,BALL_R);
+      }
+    }
+  }
+
+  function drawMatchBursts() {
+    for (const fx of matchBursts) {
+      const t=Math.max(0,Math.min(1,fx.age/fx.duration));
+      const alpha=1-t;
+      const power=fx.power||1;
+      const scale=1-(.31+.045*Math.min(2.5,power-1))*t;
+      for (const b of fx.balls) {
+        const p=trackPos(b.s);
+        drawBall(p.x,p.y,b.color,BALL_R,alpha*.78,scale);
+        drawSpecialBadge(p.x,p.y,b.special,BALL_R,alpha*.72,scale);
+        ctx.save();
+        ctx.globalAlpha=(1-t)*Math.min(.78,.42+.08*power);
+        ctx.strokeStyle=fx.kind==='bomb' ? '#ffd37c' : fx.kind==='wipe' ? '#d6f3ff' : COLORS[b.color].hi;
+        ctx.lineWidth=2.3+Math.min(2.2,(power-1)*.9);
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,BALL_R*(1+(.48+.10*Math.min(2,power-1))*t),0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawSmokeEffects() {
+    for (const fx of smokeEffects) {
+      for (const q of fx.puffs) {
+        const localAge=fx.age-q.delay;
+        if (localAge<0) continue;
+        const t=clamp(localAge/Math.max(.001,fx.duration-q.delay),0,1);
+        const p=trackPos(q.s);
+        const ease=1-Math.pow(1-t,2);
+        const x=p.x+q.ox+q.driftX*ease;
+        const y=p.y+q.oy+q.driftY*ease;
+        const r=q.r*(.72+1.02*ease);
+        const alpha=(1-t)*(.34+(fx.kind==='bomb'?.13:.08));
+        ctx.save();
+        ctx.globalAlpha=alpha;
+        const g=ctx.createRadialGradient(x-r*.18,y-r*.18,r*.06,x,y,r);
+        g.addColorStop(0,'rgba(255,255,255,.96)');
+        g.addColorStop(.42,'rgba(236,242,247,.78)');
+        g.addColorStop(1,'rgba(205,215,224,0)');
+        ctx.fillStyle=g;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  function drawSpecialNotices() {
+    for (const n of specialNotices) {
+      const t=Math.max(0,Math.min(1,n.age/n.duration));
+      const p=trackPos(n.s);
+      ctx.save();
+      ctx.globalAlpha=(1-t);
+      ctx.fillStyle=n.polarity==='down' ? '#ff8da4' : '#ffe68a';
+      ctx.font='800 15px system-ui';
+      ctx.textAlign='center';
+      ctx.fillText(n.text,p.x,p.y-31-18*t);
+      ctx.restore();
+    }
+  }
+
+  function drawProjectile() {
+    for (const p of projectiles) drawBall(p.x,p.y,p.color,p.r);
+  }
+
+  function drawShooter() {
+    ctx.save();
+    // Vertical shot guide. The actual mouse reticle carries CURRENT color.
+    ctx.strokeStyle='rgba(225,235,247,.10)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(shooterX,635); ctx.lineTo(shooterX,65); ctx.stroke();
+
+    ctx.translate(shooterX,shooterY+shooterRecoil);
+
+    // NEXT remains tucked behind the body: only a lower crescent peeks out.
+    drawBall(0,13,nextColor,BALL_R+1);
+
+    // Compact barrel-less launcher. The body is a single rounded block; a small
+    // recessed port in its top edge is the only indication of the firing mechanism.
+    const bodyG=ctx.createLinearGradient(0,-27,0,22);
+    bodyG.addColorStop(0,'#2a394b'); bodyG.addColorStop(1,'#18222f');
+    ctx.fillStyle=bodyG; ctx.strokeStyle='#667d98'; ctx.lineWidth=2.2;
+    roundedRect(-34,-27,68,49,13); ctx.fill(); ctx.stroke();
+
+    // Top-center firing port, drawn behind CURRENT.
+    ctx.fillStyle='#090e15'; ctx.strokeStyle='#8194aa'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.ellipse(0,-26,10,4.8,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(173,196,220,.14)';
+    ctx.beginPath(); ctx.ellipse(0,-25.3,6.2,2.2,0,0,Math.PI*2); ctx.fill();
+
+    // CURRENT sits directly over the port; the projectile is born from this axis.
+    drawBall(0,shooterCurrentOffsetY,currentColor,BALL_R+1);
+    if(shotTemporarilyBlocked()){
+      ctx.save();ctx.translate(0,shooterCurrentOffsetY);ctx.strokeStyle='#ff5363';ctx.lineWidth=4;ctx.lineCap='round';ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=5;
+      ctx.beginPath();ctx.moveTo(-11,-11);ctx.lineTo(11,11);ctx.moveTo(11,-11);ctx.lineTo(-11,11);ctx.stroke();ctx.restore();
+    }
+    ctx.restore();
+
+    // Touching the launcher swaps CURRENT/NEXT. No separate ammo window.
+    swapRect.x=shooterX-40; swapRect.y=shooterY-68; swapRect.w=80; swapRect.h=98;
+  }
+
+  function drawAimCursor() {
+    if (!aimVisible) return;
+    const c=COLORS[currentColor];
+    ctx.save();
+    ctx.translate(aimX,aimY);
+    ctx.strokeStyle=c.fill;
+    ctx.fillStyle=c.fill;
+    ctx.lineWidth=3;
+    ctx.globalAlpha=.95;
+    ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-22,0); ctx.lineTo(-11,0);
+    ctx.moveTo(22,0); ctx.lineTo(11,0);
+    ctx.moveTo(0,-22); ctx.lineTo(0,-11);
+    ctx.moveTo(0,22); ctx.lineTo(0,11);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,2.7,0,Math.PI*2); ctx.fill();
+    if(shotTemporarilyBlocked()){
+      ctx.strokeStyle='#ff5363';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-9,-9);ctx.lineTo(9,9);ctx.moveTo(9,-9);ctx.lineTo(-9,9);ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawScorePopups(){
+    ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+    const palette={normal:'#fff3b4',effect:'#bcd2e8',chain:'#ffd05a',streak:'#9be8ff',gap:'#7ff2c0',special:'#f3b0ff',safety:'#ffd76e'};
+    for(const p of scorePopups){const t=p.age/p.duration,alpha=Math.max(0,1-t),rise=(p.small?26:38)*t;ctx.globalAlpha=alpha;ctx.font=`${p.small?700:900} ${p.small?15:21}px system-ui`;ctx.lineWidth=p.small?3:4;ctx.strokeStyle=`rgba(3,8,13,${alpha*.82})`;ctx.fillStyle=palette[p.tone]||palette.normal;ctx.strokeText(p.text,p.x,p.y-rise);ctx.fillText(p.text,p.x,p.y-rise)}
+    ctx.restore();
+  }
+  function drawOutPulse(){
+    if(outPulse<=0)return;const p=trackPos(track.length),t=1-outPulse/.75;ctx.save();ctx.globalAlpha=Math.max(0,1-t);ctx.strokeStyle='#ffd15a';ctx.lineWidth=5-2*t;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(p.x,p.y,28+t*(45+i*18)+i*7,0,Math.PI*2);ctx.stroke()}ctx.fillStyle=`rgba(255,170,55,${.35*(1-t)})`;ctx.beginPath();ctx.arc(p.x,p.y,24+36*t,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+
+  function drawCanvasHud(){
+    if(shellScreen!=='playing')return;
+    const level=Number.isFinite(+activeStageMeta?.campaignLevel)?activeStageMeta.campaignLevel:(loadedStageIndex>=0?loadedStageIndex+1:'—');
+    const stageText=activeGameMode==='survival'?`${UI_TEXT[uiLanguage].survival} ${String(level).padStart(2,'0')} · ${formatDuration(survivalState?.elapsed)}`:`${UI_TEXT[uiLanguage].stage} ${String(level).padStart(2,'0')}${activeGameMode==='campaign'?` · ${difficultyLabel()}`:''}`;
+    const scoreText=`${UI_TEXT[uiLanguage].score} ${Math.round(displayScore).toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US')}`;
+    ctx.save();ctx.font='800 20px system-ui';ctx.textBaseline='middle';
+    const h=42,y=H-h-12,pad=14,stageW=ctx.measureText(stageText).width+pad*2,scoreW=ctx.measureText(scoreText).width+pad*2;
+    for(const [x,w] of [[18,stageW],[W-18-scoreW,scoreW]]){ctx.fillStyle='rgba(4,11,18,.84)';ctx.strokeStyle='rgba(67,91,116,.72)';ctx.lineWidth=1.4;roundedRect(x,y,w,h,11);ctx.fill();ctx.stroke()}
+    ctx.fillStyle='#edf3fa';ctx.textAlign='left';ctx.fillText(stageText,18+pad,y+h/2);
+    ctx.textAlign='right';ctx.fillText(scoreText,W-18-pad,y+h/2);
+    if(activeGameMode==='survival'&&survivalState){
+      const next=Math.max(0,survivalState.nextEscalationAt-survivalState.elapsed);
+      const pressure=`PRESSURE ${String(survivalState.eventIndex).padStart(2,'0')} · ${uiLanguage==='ja'?'直近':'LAST'}: ${survivalEventLabel(survivalState.lastEventKey)} · ${uiLanguage==='ja'?'次':'NEXT'} ${next.toFixed(1)}s`;
+      ctx.font='800 15px system-ui';const pressureW=Math.min(650,ctx.measureText(pressure).width+30),pressureX=W/2-pressureW/2;
+      ctx.fillStyle='rgba(4,11,18,.76)';ctx.strokeStyle='rgba(90,119,147,.62)';roundedRect(pressureX,y,pressureW,h,11);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#d9e7f4';ctx.textAlign='center';ctx.fillText(pressure,W/2,y+h/2);
+    }
+    ctx.restore();
+  }
+
+  function drawOverlay() {
+    ctx.save();
+    if(stageWaveProfile.enabled){
+      const deploying=waveState.phase==='deploying';
+      const waiting=waveState.phase==='waiting',arming=waveState.phase==='arming';
+      if(deploying||waiting||arming){
+        const label=deploying
+          ?`${uiLanguage==='ja'?'WAVE流入中':'WAVE INCOMING'}  ${waveState.waveIndex}${Number.isFinite(waveState.totalWaves)?`/${waveState.totalWaves}`:''}`
+          :arming?(uiLanguage==='ja'?'WAVE準備中…':'WAVE READY…'):`${uiLanguage==='ja'?'次のWAVE':'NEXT WAVE'}  ${Math.max(0,waveState.timer).toFixed(1)}s`;
+        ctx.font='800 17px system-ui';ctx.textAlign='center';
+        const width=Math.min(430,ctx.measureText(label).width+42);
+        ctx.fillStyle=deploying?'rgba(65,25,10,.9)':'rgba(4,11,18,.78)';roundedRect(W/2-width/2,18,width,36,18);ctx.fill();
+        ctx.strokeStyle=deploying?'#ff9f45':'#536f8b';ctx.lineWidth=1.5;roundedRect(W/2-width/2,18,width,36,18);ctx.stroke();
+        ctx.fillStyle=deploying?'#ffd08a':'#dce9f5';ctx.fillText(label,W/2,42);
+      }
+    }
+    if(waveClearBonus){
+      const label=`WAVE CLEAR BONUS  +${waveClearBonus.awarded.toLocaleString()}`;
+      const x=waveClearBonus.x,y=waveClearBonus.y;
+      ctx.font='900 19px system-ui';ctx.textAlign='center';ctx.lineWidth=5;ctx.strokeStyle='rgba(25,14,2,.9)';ctx.strokeText(label,x,y);
+      ctx.fillStyle='#ffe19a';ctx.fillText(label,x,y);
+    }
+    const active=[];
+    if (effectTimers.back>0) active.push(['BACK',effectTimers.back,'up']);
+    if (effectTimers.slow>0) active.push(['SLOW',effectTimers.slow,'up']);
+    if (effectTimers.shotFast>0) active.push(['SHOT FAST',effectTimers.shotFast,'up']);
+    if (effectTimers.driveFast>0) active.push(['DRIVE FAST',effectTimers.driveFast,'down']);
+    if (effectTimers.shotSlow>0) active.push(['SHOT SLOW',effectTimers.shotSlow,'down']);
+    if (active.length) {
+      const boxH=16+active.length*20;
+      ctx.fillStyle='rgba(7,11,16,.72)';
+      roundedRect(W-236,66,222,boxH,10); ctx.fill();
+      ctx.font='700 12px system-ui';
+      ctx.textAlign='left';
+      active.forEach((e,i)=>{
+        ctx.fillStyle=e[2]==='down'?'#ff8da4':'#ffe68a';
+        ctx.fillText(`${e[0]}  ${e[1].toFixed(1)}s`,W-220,90+i*20);
+      });
+    }
+
+    if (flashTimer>0 && flashText) {
+      ctx.textAlign='center';
+      const lines=String(flashText).split('\n');ctx.font=`700 ${lines.length>1?24:30}px system-ui`;
+      ctx.fillStyle=gameOver?'#ff7b81':cleared?'#7ceca8':'#f1f6ff';
+      lines.forEach((line,i)=>ctx.fillText(line,W/2,104+i*29));
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+
+    drawTrack();
+    drawMarbles();
+    drawMatchBursts();
+    drawSmokeEffects();
+    drawCrossingBridges();
+    drawUpperCrossingMarbles();
+    drawStageObstacles();
+    drawEndpoints();
+    drawSpecialNotices();
+    drawProjectile();
+    drawCanvasHud();
+    drawShooter();
+    drawAimCursor();
+    drawOverlay();
+    drawScorePopups();
+    drawOutPulse();
+
+    statsEl.textContent=`Stage: ${activeStageName}  |  Seed: ${seed}  |  Marble Ø: ${BALL_R*2}px  |  Chain: ${stageBaseSpeed}px/s  |  Shot: ${stageProjectileSpeedScale.toFixed(2)}×  |  Balls: ${stageTotalBalls}  |  Wave: ${stageWaveProfile.enabled?stageWaveProfile.waveSize:'legacy'}  |  Colors: ${activeColorCount}  |  Crossings: ${stageCrossings.length}  |  Obstacles: ${stageObstacles.length}`;
+    updateShellHud();
+  }
+
+  function loop(now) {
+    let dt=(now-lastTime)/1000;
+    lastTime=now;
+    dt=Math.min(dt,.033);
+    if(shellScreen==='playing')update(dt);
+    updateMusic(dt);
+    draw();
+    if(shellScreen==='playing'&&(gameOver||cleared))showResult();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- Input ----------
+  function canvasPoint(evt) {
+    const r=canvas.getBoundingClientRect();
+    return {x:(evt.clientX-r.left)*W/r.width, y:(evt.clientY-r.top)*H/r.height};
+  }
+
+  canvas.addEventListener('pointermove',e=>{
+    if(shellScreen!=='playing')return;
+    if (e.pointerType==='mouse') {
+      const p=canvasPoint(e);
+      shooterX=Math.max(28,Math.min(W-28,p.x));
+      aimX=p.x; aimY=p.y; aimVisible=true;
+    }
+  });
+  canvas.addEventListener('pointerenter',e=>{
+    if(shellScreen!=='playing')return;
+    if (e.pointerType==='mouse') aimVisible=true;
+  });
+  canvas.addEventListener('pointerleave',e=>{
+    if (e.pointerType==='mouse') aimVisible=false;
+  });
+
+  canvas.addEventListener('pointerdown',e=>{
+    if(shellScreen!=='playing')return;
+    e.preventDefault();
+    ensureAudio();
+    const p=canvasPoint(e);
+    if (e.pointerType==='mouse') { aimX=p.x; aimY=p.y; aimVisible=true; }
+    if (p.x>=swapRect.x && p.x<=swapRect.x+swapRect.w && p.y>=swapRect.y && p.y<=swapRect.y+swapRect.h && (e.pointerType==='touch' || e.pointerType==='pen')) {
+      swapAmmo();return;
+    }
+    if (e.pointerType==='touch' || e.pointerType==='pen') {
+      fire(p.x,p.x,p.y,true);
+    } else if (e.button===0) {
+      shooterX=Math.max(28,Math.min(W-28,p.x));
+      fire(shooterX,shooterX,0,false);
+    }
+  });
+
+  canvas.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    if(shellScreen!=='playing')return;
+    ensureAudio();
+    swapAmmo();
+  });
+
+  window.addEventListener('keydown',e=>{
+    ensureAudio();
+    if (e.code==='Escape'&&(shellScreen==='setup'||shellScreen==='survival'))returnToTitle();
+    if (e.code==='KeyR'&&shellScreen==='playing') reset(seed);
+    if (e.code==='KeyF'&&shellScreen==='playing'&&activeGameMode!=='survival'&&!e.repeat) forceStageClear();
+    if (e.code==='Space'&&(shellScreen==='playing'||shellScreen==='paused')) { e.preventDefault(); togglePause(); }
+  });
+
+  function togglePause() {
+    if (gameOver || cleared || !['playing','paused'].includes(shellScreen)) return;
+    if(shellScreen==='paused'){paused=false;setShellScreen('playing');resumeStageMusic()}
+    else{paused=true;pauseStageMusic();setShellScreen('paused')}
+    lastTime=performance.now();
+  }
+  pauseBtn.addEventListener('click',()=>{ensureAudio(); togglePause();});
+  soundBtn.addEventListener('click',toggleSound);
+  loadStageBtn.addEventListener('click',()=>stageFileInput.click());
+  stageFileInput.addEventListener('change',async()=>{
+    const file=stageFileInput.files?.[0];
+    if(!file)return;
+    try{
+      ensureAudio();
+      await loadStageSpecFile(file);
+      flashText='STAGE LOADED';flashTimer=1.0;showToast(uiLanguage==='ja'?'データを読み込みました':'Data loaded');
+    }catch(e){
+      console.error(e);
+      alert(`Stage / Bundle / Campaign load failed:\n${e.message||e}`);
+    }finally{
+      stageFileInput.value='';
+    }
+  });
+  loadedStageSelect.addEventListener('change',()=>{ensureAudio();tryActivateLoadedStage(+loadedStageSelect.value)});
+  prevStageBtn.addEventListener('click',()=>{ensureAudio();tryActivateLoadedStage(loadedStageIndex-1)});
+  nextStageBtn.addEventListener('click',()=>{ensureAudio();tryActivateLoadedStage(loadedStageIndex+1)});
+  useLoadedCampaignBtn.addEventListener('click',()=>{ensureAudio();useLoadedCampaignAsMain()});
+  restoreBuiltInCampaignBtn.addEventListener('click',()=>{ensureAudio();restoreBuiltInMainCampaign()});
+
+  document.getElementById('languageBtn').addEventListener('click',toggleLanguage);
+  document.getElementById('settingsLanguageBtn').addEventListener('click',toggleLanguage);
+  document.getElementById('settingsSoundBtn').addEventListener('click',toggleSound);
+  document.getElementById('exportSaveDataBtn').addEventListener('click',downloadPlayerSave);
+  document.getElementById('importSaveDataBtn').addEventListener('click',()=>saveDataFileInput.click());
+  saveDataFileInput.addEventListener('change',()=>{const file=saveDataFileInput.files?.[0];if(file)return readPlayerSaveFile(file)});
+  for(const [key,input] of [['master',masterVolumeInput],['bgm',bgmVolumeInput],['sfx',sfxVolumeInput]]){
+    input.addEventListener('input',()=>{audioSettings[key]=Number(input.value);if(key==='sfx'&&!audioSettings.muted)ensureAudio();saveAudioSettings();applyAudioLevels()});
+  }
+  newGameBtn.addEventListener('click',startNewCampaign);
+  continueBtn.addEventListener('click',continueCampaign);
+  campaignDifficultySelect.addEventListener('change',()=>setCampaignDifficulty(campaignDifficultySelect.value));
+  highScoreDifficultySelect.addEventListener('change',()=>setCampaignDifficulty(highScoreDifficultySelect.value));
+  document.getElementById('stageTestModeBtn').addEventListener('click',()=>openSetup('stage-test'));
+  document.getElementById('survivalModeBtn').addEventListener('click',openSurvivalSetup);
+  document.getElementById('highScoresModeBtn').addEventListener('click',()=>{updateCampaignShell();setShellScreen('highscores')});
+  document.getElementById('settingsModeBtn').addEventListener('click',()=>setShellScreen('settings'));
+  document.getElementById('setupBackBtn').addEventListener('click',returnToTitle);
+  document.getElementById('survivalBackBtn').addEventListener('click',returnToTitle);
+  document.getElementById('settingsBackBtn').addEventListener('click',returnToTitle);
+  document.getElementById('highScoresBackBtn').addEventListener('click',returnToTitle);
+  document.getElementById('startGameBtn').addEventListener('click',startSelectedStage);
+  survivalStageSelect.addEventListener('change',()=>{survivalSelectedIndex=+survivalStageSelect.value;renderSurvivalSetup()});
+  document.getElementById('survivalStartBtn').addEventListener('click',()=>startSurvivalLevel(+survivalStageSelect.value));
+  document.getElementById('resumeBtn').addEventListener('click',togglePause);
+  document.getElementById('restartBtn').addEventListener('click',()=>{reset(seed);paused=false;setShellScreen('playing');startStageMusic(true)});
+  stageSelectBtn.addEventListener('click',()=>{if(activeGameMode==='campaign')return;paused=true;stopStageMusic(true);if(activeGameMode==='survival')openSurvivalSetup();else openSetup(setupMode)});
+  document.getElementById('titleBtn').addEventListener('click',returnToTitle);
+  resultReplayBtn.addEventListener('click',()=>{
+    if(activeGameMode==='survival'){startSurvivalLevel(survivalSelectedIndex);return}
+    if(activeGameMode!=='campaign'){startSelectedStage();return}
+    const target=cleared?campaignResultNextIndex:loadedStageIndex;
+    if(target>=0)startMainCampaignLevel(target);
+  });
+  resultSelectBtn.addEventListener('click',()=>{
+    if(activeGameMode==='campaign'){
+      const target=campaignResultLevelIndex>=0?campaignResultLevelIndex:loadedStageIndex;
+      if(target>=0)startMainCampaignLevel(target,{updateRun:false});
+      return;
+    }
+    stopStageMusic(true);if(activeGameMode==='survival')openSurvivalSetup();else openSetup(setupMode);
+  });
+  document.getElementById('resultTitleBtn').addEventListener('click',returnToTitle);
+
+  document.addEventListener('visibilitychange',()=>{
+    if (document.hidden && shellScreen==='playing'&&!gameOver&&!cleared){paused=true;pauseStageMusic();setShellScreen('paused')}
+    lastTime=performance.now();
+  });
+  window.addEventListener('blur',()=>{
+    if (shellScreen==='playing'&&!gameOver&&!cleared){paused=true;pauseStageMusic();setShellScreen('paused')}
+  });
+
+  // Initialize the hidden engine state; Stage Test assigns a fresh run seed on PLAY.
+  reset((Date.now() ^ 0xA51C3E21)>>>0);
+  paused=true;initializeMainCampaign();setCampaignDifficulty(activeCampaignDifficulty,{persist:false});setLanguage('en');setShellScreen('title');
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+{
+  "format": "marble-popper-tier-profile-set",
+  "schemaVersion": 1,
+  "gameplayProfileSchemaVersion": 5,
+  "tierSize": 10,
+  "tierCount": 10,
+  "title": "Marble Popper Main Campaign Tier Settings",
+  "createdAt": "2026-08-23T22:23:08.099Z",
+  "sourceCampaignId": "marble-popper-main-v5",
+  "profiles": [
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-01",
+      "totalBalls": 280,
+      "colorCount": 3,
+      "baseSpeed": 108,
+      "projectileSpeedScale": 1.13,
+      "queueProfile": {
+        "id": "campaign-queue-tier-01",
+        "runLengthWeights": [
+          15,
+          20,
+          30,
+          25
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 16,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-02",
+      "totalBalls": 290,
+      "colorCount": 3,
+      "baseSpeed": 110,
+      "projectileSpeedScale": 1.11,
+      "queueProfile": {
+        "id": "campaign-queue-tier-02",
+        "runLengthWeights": [
+          20,
+          25,
+          25,
+          20
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 16,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-03",
+      "totalBalls": 300,
+      "colorCount": 3,
+      "baseSpeed": 112,
+      "projectileSpeedScale": 1.09,
+      "queueProfile": {
+        "id": "campaign-queue-tier-03",
+        "runLengthWeights": [
+          25,
+          30,
+          20,
+          15
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 17,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-04",
+      "totalBalls": 310,
+      "colorCount": 4,
+      "baseSpeed": 113,
+      "projectileSpeedScale": 1.07,
+      "queueProfile": {
+        "id": "campaign-queue-tier-04",
+        "runLengthWeights": [
+          20,
+          20,
+          30,
+          20
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 17,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-05",
+      "totalBalls": 320,
+      "colorCount": 4,
+      "baseSpeed": 115,
+      "projectileSpeedScale": 1.05,
+      "queueProfile": {
+        "id": "campaign-queue-tier-05",
+        "runLengthWeights": [
+          25,
+          25,
+          25,
+          15
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 18,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-06",
+      "totalBalls": 330,
+      "colorCount": 4,
+      "baseSpeed": 117,
+      "projectileSpeedScale": 1.03,
+      "queueProfile": {
+        "id": "campaign-queue-tier-06",
+        "runLengthWeights": [
+          30,
+          30,
+          20,
+          10
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 18,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-07",
+      "totalBalls": 340,
+      "colorCount": 5,
+      "baseSpeed": 119,
+      "projectileSpeedScale": 1.01,
+      "queueProfile": {
+        "id": "campaign-queue-tier-07",
+        "runLengthWeights": [
+          25,
+          20,
+          30,
+          15
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 19,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-08",
+      "totalBalls": 350,
+      "colorCount": 5,
+      "baseSpeed": 120,
+      "projectileSpeedScale": 0.99,
+      "queueProfile": {
+        "id": "campaign-queue-tier-08",
+        "runLengthWeights": [
+          25,
+          30,
+          25,
+          10
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 19,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-09",
+      "totalBalls": 360,
+      "colorCount": 5,
+      "baseSpeed": 122,
+      "projectileSpeedScale": 0.97,
+      "queueProfile": {
+        "id": "campaign-queue-tier-09",
+        "runLengthWeights": [
+          30,
+          30,
+          15,
+          5
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 20,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    },
+    {
+      "format": "marble-popper-gameplay-profile",
+      "schemaVersion": 5,
+      "profileId": "campaign-tier-10",
+      "totalBalls": 370,
+      "colorCount": 5,
+      "baseSpeed": 124,
+      "projectileSpeedScale": 0.95,
+      "queueProfile": {
+        "id": "campaign-queue-tier-10",
+        "runLengthWeights": [
+          30,
+          20,
+          10,
+          5
+        ],
+        "longRunTailScale": 1,
+        "singletonStreakLimit": 2,
+        "singletonOverflowChance": 0.1
+      },
+      "waveProfile": {
+        "waveSize": 20,
+        "waveInterval": 5,
+        "entryPaddingMarbles": 2,
+        "deploymentSpeed": 640,
+        "emptyBoardInterval": 1.25
+      }
+    }
+  ]
+}

@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marble Popper Campaign Builder v0.8</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#081119;--bg-2:#0b151f;--panel:#0e1a24;--panel-2:#111f2b;
+    --line:#2b3c49;--line-soft:#1d2c37;--text:#f4f7f9;--muted:#98a9b6;
+    --cyan:#1dc8f1;--cyan-soft:#10384a;--amber:#ffb21c;--green:#59d06f;
+    --red:#ff655f;--radius:8px;--shadow:0 18px 44px #0007;
+    font-family:Inter,"Segoe UI","Noto Sans JP",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;min-height:100vh;background:radial-gradient(circle at 54% -25%,#163245 0,#081119 42%);color:var(--text);font-size:14px}
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  button:disabled{cursor:not-allowed;opacity:.45}
+  .app{width:100%;max-width:100vw;min-height:100vh;display:grid;grid-template-rows:58px minmax(0,1fr) 56px;overflow-x:hidden}
+  header{display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:#09131cdd;backdrop-filter:blur(10px)}
+  h1{font-size:21px;line-height:1;margin:0;font-weight:760;letter-spacing:-.025em}
+  .version{color:var(--muted);font-size:12px;font-weight:500;margin-left:8px}
+  .lang-switch{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .lang-switch button{border:0;background:#0a141d;color:var(--muted);padding:8px 18px}
+  .lang-switch button.active{background:#103147;color:#fff;box-shadow:inset 0 -2px var(--cyan)}
+  .workspace{min-height:0;display:grid;grid-template-columns:286px minmax(520px,1fr) 346px}
+  aside,.center{min-width:0;min-height:0}
+  .workflow{border-right:1px solid var(--line);padding:18px;background:#0a141dda;overflow:auto}
+  .inspector{border-left:1px solid var(--line);padding:18px;background:#0b161fda;overflow:auto}
+  .center{padding:0 14px 18px;overflow:auto}
+  h2{font-size:15px;margin:0 0 14px;letter-spacing:.02em}
+  h3{font-size:14px;margin:0}
+  .step{margin-bottom:22px}
+  .step-title{display:flex;align-items:center;gap:9px;margin-bottom:10px;font-weight:700}
+  .step-no{display:grid;place-items:center;width:22px;height:22px;border:1px solid var(--cyan);border-radius:50%;color:var(--cyan);font-size:12px}
+  .drop-zone{display:grid;place-items:center;min-height:132px;padding:18px;text-align:center;border:1px dashed #607381;border-radius:var(--radius);background:#0b151e;transition:.18s ease}
+  .drop-zone.drag{border-color:var(--cyan);background:#0f2634;transform:translateY(-1px)}
+  .drop-zone button{border:0;background:transparent;color:var(--text);padding:0;line-height:1.75}
+  .upload-icon{width:34px;height:34px;margin:0 auto 8px;color:var(--muted)}
+  .file-state{margin-top:8px;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+  .summary{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#0c1822}
+  .summary-row{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;border-bottom:1px solid var(--line-soft)}
+  .summary-row:last-child{border:0}
+  .summary-row span:first-child{color:#bdc8d0}
+  .summary-row strong{font-variant-numeric:tabular-nums}
+  .curve-box{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:#0c1822}
+  .curve-box label{display:grid;gap:5px;color:#bdc8d0;font-size:12px}
+  .curve-box select,.curve-box input{width:100%;background:#08131c;border:1px solid var(--line);border-radius:5px;padding:8px 9px}
+  .curve-ends{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .curve-note{color:var(--muted);font-size:11px;line-height:1.45}
+  .tier-io-box{display:grid;gap:9px;padding:12px;border:1px solid var(--line);border-radius:var(--radius);background:#0c1822}
+  .tier-io-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tier-io-actions button{min-width:0}
+  .primary,.secondary,.danger{width:100%;border-radius:6px;padding:11px 13px;font-weight:700;border:1px solid var(--line)}
+  .primary{background:#087fb6;border-color:#18bde9;color:white;box-shadow:0 8px 24px #0099d026}
+  .primary:hover:not(:disabled){background:#0a91ca}
+  .secondary{background:#0c1822;color:#dce4e9}
+  .danger{background:#241518;border-color:#7b302e;color:#ff837d}
+  .status-box{border:1px solid #275b38;border-radius:var(--radius);padding:13px;background:#0c2017;color:#bcebc5;line-height:1.5}
+  .status-box.error{border-color:#713431;background:#241416;color:#ffaaa5}
+  .status-title{font-weight:800;color:var(--green);margin-bottom:4px}
+  .status-box.error .status-title{color:var(--red)}
+  .tabs{height:52px;display:flex;gap:12px;border-bottom:1px solid var(--line);align-items:end}
+  .tab{border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);padding:15px 12px 12px;font-weight:700}
+  .tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 10px}
+  .section-head .count{color:var(--muted);font-weight:500}
+  .table-shell{max-width:100%;border:1px solid var(--line);border-radius:var(--radius);overflow:auto;background:#0b1720;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  th{position:sticky;top:0;z-index:1;background:#101d27;color:#cbd5dc;text-align:left;font-size:12px;font-weight:700;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:8px 10px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  tbody tr{transition:.12s ease}
+  tbody tr:hover{background:#102531}
+  tbody tr.selected{background:#103044;box-shadow:inset 3px 0 var(--cyan)}
+  tbody tr:last-child td{border-bottom:0}
+  .num{text-align:right}
+  .score{color:#74dcf5;font-weight:700}
+  .tier-tag{display:inline-grid;place-items:center;min-width:24px;height:22px;border:1px solid var(--amber);color:var(--amber);background:#2a210b;border-radius:3px;font-weight:800}
+  .family{color:#dce5eb}
+  .profile-name{color:#ffd068}
+  .empty{height:340px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:30px}
+  .tier-panel{margin-top:18px}
+  .tier-panel select,.inspector select,.field input,.field select,.footer-field input{width:100%;background:#0a151e;border:1px solid var(--line);border-radius:5px;padding:8px 9px}
+  .tier-panel td{min-width:72px}.tier-panel td:nth-child(2){min-width:90px}
+  .tier-panel tbody tr{cursor:pointer}.tier-panel .pressure{color:#ffca67;font-weight:750}.tier-panel .miss{color:#ff8b84}
+  .inspector-head{padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .level-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+  .nav-buttons{display:flex;gap:7px}
+  .nav-buttons button,.copy-btn{background:#0c1822;border:1px solid var(--line);border-radius:5px;padding:7px 10px}
+  .detail-grid{display:grid;grid-template-columns:120px 1fr;gap:8px 12px;padding:15px 0;border-bottom:1px solid var(--line)}
+  .detail-grid dt{color:#9eafbb}.detail-grid dd{margin:0;overflow-wrap:anywhere}
+  .cyan{color:var(--cyan)}
+  .profile-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 12px}
+  .profile-head select{flex:1}
+  .copy-btn{width:auto;white-space:nowrap}
+  .fields{display:grid;gap:16px}
+  .field label{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700;margin-bottom:7px}
+  .field small{display:block;color:var(--muted);line-height:1.4;margin-top:5px}
+  .range-row{display:grid;grid-template-columns:1fr 76px;gap:10px;align-items:center}
+  .run-weight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .run-weight-grid .field{padding:9px;border:1px solid var(--line-soft);border-radius:6px;background:#0b1720}
+  .run-preview{padding:11px;border:1px solid var(--line);border-radius:6px;background:#08131c}
+  .run-preview-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;font-size:12px;color:#c9d5dc}
+  .run-preview-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;align-items:end;height:78px}
+  .run-preview-item{display:grid;grid-template-rows:1fr auto auto;gap:3px;height:100%;text-align:center;color:var(--muted);font-size:10px}
+  .run-preview-bar{align-self:end;min-height:2px;border-radius:3px 3px 1px 1px;background:linear-gradient(#ffca55,#db8512)}
+  input[type=range]{accent-color:var(--amber);padding:0;border:0;background:transparent}
+  .profile-note{margin-top:16px;padding:10px 11px;border:1px solid var(--line);border-radius:6px;color:#a9bdc9;background:#0c1822;font-size:12px;line-height:1.5}
+  .inspector-empty{height:70vh;display:grid;place-items:center;text-align:center;color:var(--muted)}
+  footer{display:flex;align-items:center;gap:22px;padding:8px 18px;border-top:1px solid var(--line);background:#09131c}
+  .footer-field{display:flex;align-items:center;gap:10px;min-width:0}
+  .footer-field label{color:var(--muted);white-space:nowrap}
+  .footer-field input{width:220px}
+  .footer-status{margin-left:auto;color:var(--green);white-space:nowrap}
+  .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  @media(max-width:1120px){
+    .workspace{grid-template-columns:260px minmax(500px,1fr)}
+    .inspector{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);display:grid;grid-template-columns:280px 1fr;gap:20px}
+    .inspector-empty{height:220px;grid-column:1/-1}.fields{grid-template-columns:repeat(2,minmax(180px,1fr))}
+  }
+  @media(max-width:760px){
+    .app{grid-template-rows:auto auto auto}.workspace{display:block}.workflow,.inspector{border:0;border-bottom:1px solid var(--line)}
+    header{min-width:0;min-height:62px;display:grid;grid-template-columns:1fr;gap:12px;padding:14px 18px}h1{font-size:18px}.version{display:none}.lang-switch{justify-self:start;margin-left:0}.lang-switch button{padding:8px 11px}
+    .center{padding:0 10px 16px}.inspector{display:block}.fields{grid-template-columns:1fr}.table-shell{box-shadow:none}
+    footer{flex-wrap:wrap}.footer-status{margin-left:0;width:100%}.footer-field input{width:min(60vw,220px)}
+  }
+  @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Marble Popper Campaign Builder <span class="version">v0.8</span></h1>
+    <div class="lang-switch" aria-label="Language">
+      <button id="langJa" class="active" type="button">日本語</button>
+      <button id="langEn" type="button">English</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <aside class="workflow">
+      <h2 data-i18n="workflow">ワークフロー</h2>
+      <section class="step">
+        <div class="step-title"><span class="step-no">1</span><span data-i18n="loadBundle">評価済みバンドルを読み込む</span></div>
+        <div id="dropZone" class="drop-zone">
+          <input id="fileInput" class="sr-only" type="file" accept="application/json,.json">
+          <button id="chooseFile" type="button">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 16V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v6h14v-6"/></svg>
+            <span data-i18n="dropPrompt">ファイルをここにドロップ<br>またはクリックして選択</span>
+          </button>
+          <div id="fileState" class="file-state" data-i18n="jsonOnly">Evaluated Stage Bundle JSON</div>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="step-title"><span class="step-no">2</span><span data-i18n="bundleSummary">バンドル概要</span></div>
+        <div class="summary">
+          <div class="summary-row"><span data-i18n="stageCount">ステージ数</span><strong id="stageCount">—</strong></div>
+          <div class="summary-row"><span data-i18n="familyCount">ファミリー数</span><strong id="familyCount">—</strong></div>
+          <div class="summary-row"><span data-i18n="tierCount">ティア数</span><strong id="tierCount">—</strong></div>
+          <div class="summary-row"><span data-i18n="obstacleCount">障害物数</span><strong id="obstacleCount">—</strong></div>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="step-title"><span class="step-no">3</span><span data-i18n="tierSettingsIO">ティア設定の保存・読み込み</span></div>
+        <div class="tier-io-box">
+          <input id="tierSettingsInput" class="sr-only" type="file" accept="application/json,.json">
+          <div class="tier-io-actions">
+            <button id="loadTierSettings" class="secondary" type="button" disabled data-i18n="loadTierSettings">設定を読み込む</button>
+            <button id="exportTierSettings" class="secondary" type="button" disabled data-i18n="exportTierSettings">設定を書き出す</button>
+          </div>
+          <div class="curve-note" data-i18n="tierSettingsHelp">現在のステージと並び順を変えず、同じティア数の設定だけを交換します。専用設定JSONまたはキャンペーンJSONを読み込めます。</div>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="step-title"><span class="step-no">4</span><span data-i18n="curveEditor">ティア曲線を自動補間</span></div>
+        <div class="curve-box">
+          <label><span data-i18n="parameter">パラメーター</span><select id="curveParameter"></select></label>
+          <div class="curve-ends">
+            <label><span data-i18n="firstTierValue">Tier 1</span><input id="curveStart" type="number"></label>
+            <label><span data-i18n="lastTierValue">最終Tier</span><input id="curveEnd" type="number"></label>
+          </div>
+          <button id="applyCurve" class="secondary" type="button" disabled data-i18n="applyInterpolation">全ティアへ補間</button>
+          <div class="curve-note" data-i18n="curveHelp">選択した値だけを線形補間します。その後、右側で各ティアを個別調整できます。</div>
+        </div>
+      </section>
+
+      <section class="step">
+        <div class="step-title"><span class="step-no">5</span><span data-i18n="exportHeading">キャンペーンJSONを書き出す</span></div>
+        <button id="exportButton" class="primary" type="button" disabled data-i18n="exportButton">キャンペーンJSONを書き出す</button>
+      </section>
+
+      <div id="statusBox" class="status-box">
+        <div id="statusTitle" class="status-title" data-i18n="waiting">待機中</div>
+        <div id="statusMessage" data-i18n="waitingMessage">評価済みバンドルを読み込んでください。</div>
+      </div>
+    </aside>
+
+    <main class="center">
+      <nav class="tabs" aria-label="Builder sections">
+        <button class="tab active" type="button" data-target="tiersSection" data-i18n="tierSettings">ティア設定</button>
+        <button class="tab" type="button" data-target="levelsSection" data-i18n="campaignOrder">キャンペーン順</button>
+      </nav>
+
+      <section id="tiersSection" class="tier-panel">
+        <div class="section-head"><h2 data-i18n="tierParameters">10ステージ固定ティア / パラメーター</h2></div>
+        <div class="table-shell">
+          <table>
+            <thead><tr><th data-i18n="tier">ティア</th><th data-i18n="levelRange">レベル範囲</th><th class="num" data-i18n="averageTrack">平均レーン</th><th class="num" data-i18n="chainSpeed">速度</th><th class="num" data-i18n="totalMarbles">総数</th><th class="num" data-i18n="marbleColors">色</th><th class="num" data-i18n="shotSpeed">射出</th><th class="num" data-i18n="waveSize">WAVE</th><th class="num" data-i18n="pushRatio">押込率</th><th class="num" data-i18n="waveInterval">間隔</th></tr></thead>
+            <tbody id="tierRows"><tr><td colspan="10" class="empty" data-i18n="emptyTiers">バンドル読み込み後に設定できます。</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="levelsSection">
+        <div class="section-head">
+          <h2><span data-i18n="levelList">レベル一覧</span> <span id="levelCountLabel" class="count">(0)</span></h2>
+        </div>
+        <div class="table-shell">
+          <table id="levelTable" hidden>
+            <thead><tr>
+              <th class="num" data-i18n="level">レベル</th>
+              <th data-i18n="tier">ティア</th>
+              <th data-i18n="family">ファミリー</th>
+              <th class="num" data-i18n="geometry">Geometry</th>
+              <th data-i18n="profile">プロファイル</th>
+              <th data-i18n="stageId">StageSpec ID</th>
+            </tr></thead>
+            <tbody id="levelRows"></tbody>
+          </table>
+          <div id="levelEmpty" class="empty" data-i18n="emptyLevels">バンドルを読み込むと、ファミリー内順位とティアに基づくキャンペーン順を表示します。</div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="inspector">
+      <div id="inspectorEmpty" class="inspector-empty" data-i18n="emptyInspector">ティアを選択するとGameplayProfileを編集できます。</div>
+      <div id="inspectorContent" hidden>
+        <div class="inspector-head">
+          <h2 data-i18n="tierDetail">ティア別プロファイル編集</h2>
+          <div class="level-nav">
+            <strong id="selectedTierLabel">—</strong>
+            <div class="nav-buttons"><button id="previousTier" type="button" data-i18n="previous">前へ</button><button id="nextTier" type="button" data-i18n="next">次へ</button></div>
+          </div>
+        </div>
+        <dl class="detail-grid">
+          <dt data-i18n="levelRange">レベル範囲</dt><dd id="detailLevelRange">—</dd>
+          <dt data-i18n="averageTrack">平均レーン</dt><dd id="detailAverageTrack">—</dd>
+          <dt data-i18n="shortestTrack">最短レーン</dt><dd id="detailShortestTrack">—</dd>
+          <dt data-i18n="wavePressure">WAVE押し込み</dt><dd id="detailWavePressure" class="cyan">—</dd>
+        </dl>
+
+        <div class="profile-head">
+          <strong id="profileId" class="profile-name">—</strong>
+        </div>
+        <div class="fields">
+          <div class="field">
+            <label for="baseSpeed"><span data-i18n="chainSpeed">チェーン速度</span><output id="baseSpeedValue"></output></label>
+            <div class="range-row"><input id="baseSpeed" type="range" min="30" max="180" step="1"><input id="baseSpeedNumber" type="number" min="1" max="250" step="1"></div>
+            <small data-i18n="chainSpeedHelp">速いほど難しくなります。単位はpx/sです。</small>
+          </div>
+          <div class="field">
+            <label for="shotScale"><span data-i18n="shotSpeed">射出速度倍率</span><output id="shotScaleValue"></output></label>
+            <div class="range-row"><input id="shotScale" type="range" min="0.4" max="2" step="0.01"><input id="shotScaleNumber" type="number" min="0.4" max="2" step="0.01"></div>
+            <small data-i18n="shotSpeedHelp">遅いほど難しくなります。開始速度・加速度・最高速度へ同じ倍率を適用します。</small>
+          </div>
+          <div class="field">
+            <label for="colorCount" data-i18n="marbleColors">マーブルの色数</label>
+            <select id="colorCount"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+            <small data-i18n="colorHelp">多いほどマッチを作りにくくなります。</small>
+          </div>
+          <div class="field">
+            <label for="totalBalls"><span data-i18n="totalMarbles">総マーブル数</span><output id="totalBallsValue"></output></label>
+            <div class="range-row"><input id="totalBalls" type="range" min="20" max="600" step="1"><input id="totalBallsNumber" type="number" min="1" max="1000" step="1"></div>
+          </div>
+          <div class="field">
+            <label for="waveSize"><span data-i18n="waveSize">WAVEマーブル数</span><output id="waveSizeValue"></output></label>
+            <div class="range-row"><input id="waveSize" type="range" min="3" max="80" step="1"><input id="waveSizeNumber" type="number" min="3" max="80" step="1"></div>
+            <small data-i18n="waveSizeHelp">大きいほど投入時に列全体を遠くまで押し出します。</small>
+          </div>
+          <div class="field">
+            <label for="waveInterval"><span data-i18n="waveInterval">WAVE間隔</span><output id="waveIntervalValue"></output></label>
+            <div class="range-row"><input id="waveInterval" type="range" min="1" max="15" step="0.25"><input id="waveIntervalNumber" type="number" min="1" max="15" step="0.25"></div>
+          </div>
+          <div class="field">
+            <label for="emptyBoardInterval"><span data-i18n="emptyBoardInterval">盤面クリア時のWAVE間隔</span><output id="emptyBoardIntervalValue"></output></label>
+            <div class="range-row"><input id="emptyBoardInterval" type="range" min="0.25" max="5" step="0.25"><input id="emptyBoardIntervalNumber" type="number" min="0.25" max="5" step="0.25"></div>
+          </div>
+          <div class="field">
+            <label for="entryPadding"><span data-i18n="entryPadding">投入後の余裕</span><output id="entryPaddingValue"></output></label>
+            <div class="range-row"><input id="entryPadding" type="range" min="0" max="5" step="0.25"><input id="entryPaddingNumber" type="number" min="0" max="5" step="0.25"></div>
+            <small data-i18n="entryPaddingHelp">最後尾をINから何個分余計に進めるかを指定します。</small>
+          </div>
+          <div class="field">
+            <label for="deploymentSpeed"><span data-i18n="deploymentSpeed">WAVE投入速度</span><output id="deploymentSpeedValue"></output></label>
+            <div class="range-row"><input id="deploymentSpeed" type="range" min="200" max="1200" step="10"><input id="deploymentSpeedNumber" type="number" min="200" max="1200" step="10"></div>
+          </div>
+          <div class="field">
+            <label><span data-i18n="physicalRunWeights">物理ラン長の相対重み</span></label>
+            <div class="run-weight-grid">
+              <div class="field"><label for="runWeight1"><span data-i18n="run1">1個</span><output id="runWeight1Value"></output></label><div class="range-row"><input id="runWeight1" type="range" min="0" max="100" step="1"><input id="runWeight1Number" type="number" min="0" max="100" step="1"></div></div>
+              <div class="field"><label for="runWeight2"><span data-i18n="run2">2個</span><output id="runWeight2Value"></output></label><div class="range-row"><input id="runWeight2" type="range" min="0" max="100" step="1"><input id="runWeight2Number" type="number" min="0" max="100" step="1"></div></div>
+              <div class="field"><label for="runWeight3"><span data-i18n="run3">3個</span><output id="runWeight3Value"></output></label><div class="range-row"><input id="runWeight3" type="range" min="0" max="100" step="1"><input id="runWeight3Number" type="number" min="0" max="100" step="1"></div></div>
+              <div class="field"><label for="runWeight4"><span data-i18n="run4">4個以上</span><output id="runWeight4Value"></output></label><div class="range-row"><input id="runWeight4" type="range" min="0" max="100" step="1"><input id="runWeight4Number" type="number" min="0" max="100" step="1"></div></div>
+            </div>
+            <small data-i18n="physicalRunHelp">1～3個はその長さ、4個以上は長ランの基準重みです。ラン境界では必ず別色になります。</small>
+          </div>
+          <div class="field">
+            <label for="longRunTailScale"><span data-i18n="longRunTail">長ランテール</span><output id="longRunTailScaleValue"></output></label>
+            <div class="range-row"><input id="longRunTailScale" type="range" min="0" max="1" step="0.05"><input id="longRunTailScaleNumber" type="number" min="0" max="1" step="0.05"></div>
+            <small data-i18n="longRunTailHelp">1.00では5個=4個×20%、6個=×10%、7個=×5%。0では4個で打ち切ります。</small>
+          </div>
+          <div class="run-preview">
+            <div class="run-preview-head"><strong data-i18n="visibleShare">画面上の予測比率</strong><span id="averageRunLength">—</span></div>
+            <div id="runPreviewGrid" class="run-preview-grid"></div>
+          </div>
+          <div class="field">
+            <label for="singletonLimit"><span data-i18n="singletonLimit">単独色の連続上限</span><output id="singletonLimitValue"></output></label>
+            <div class="range-row"><input id="singletonLimit" type="range" min="1" max="4" step="1"><input id="singletonLimitNumber" type="number" min="1" max="4" step="1"></div>
+            <small data-i18n="singletonLimitHelp">1個ランがこの回数続くと、次は原則2個以上にします。</small>
+          </div>
+          <div class="field">
+            <label for="singletonOverflow"><span data-i18n="singletonOverflow">単独色上限の超過率</span><output id="singletonOverflowValue"></output></label>
+            <div class="range-row"><input id="singletonOverflow" type="range" min="0" max="1" step="0.01"><input id="singletonOverflowNumber" type="number" min="0" max="1" step="0.01"></div>
+            <small data-i18n="singletonOverflowHelp">上限後もさらに1個ランを許す確率です。低いほど単独色の長い連発が減ります。</small>
+          </div>
+        </div>
+        <div class="profile-note" data-i18n="sharedProfileNote">変更はこのティアの10ステージすべてに反映されます。ステージ個別の割り当ては行いません。</div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <div class="footer-field"><label for="campaignId">Campaign ID</label><input id="campaignId" value="marble-popper-main-v5"></div>
+    <div class="footer-field"><label for="campaignTitle" data-i18n="campaignTitle">キャンペーン名</label><input id="campaignTitle" value="Marble Popper Main Campaign"></div>
+    <div id="footerStatus" class="footer-status" data-i18n="notLoaded">未読み込み</div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const I18N = {
+    ja:{workflow:'ワークフロー',loadBundle:'評価済みバンドル／キャンペーンを読み込む',dropPrompt:'ファイルをここにドロップ<br>またはクリックして選択',jsonOnly:'Evaluated Bundle / Campaign JSON',bundleSummary:'データ概要',stageCount:'ステージ数',familyCount:'ファミリー数',tierCount:'ティア数',obstacleCount:'障害物数',tierSettingsIO:'ティア設定の保存・読み込み',loadTierSettings:'設定を読み込む',exportTierSettings:'設定を書き出す',tierSettingsHelp:'現在のステージと並び順を変えず、同じティア数の設定だけを交換します。専用設定JSONまたはキャンペーンJSONを読み込めます。',tierSettingsLoaded:'ティア設定を読み込みました',tierSettingsExported:'ティア設定を書き出しました',tierCountMismatch:'ティア数が一致しません',replaceTierSettings:'現在のティア設定を上書きします。よろしいですか？',curveEditor:'ティア曲線を自動補間',parameter:'パラメーター',firstTierValue:'Tier 1',lastTierValue:'最終Tier',applyInterpolation:'全ティアへ補間',curveHelp:'選択した値だけを線形補間します。その後、右側で各ティアを個別調整できます。',curveApplied:'ティア曲線を適用しました',exportHeading:'キャンペーンJSONを書き出す',exportButton:'キャンペーンJSONを書き出す',waiting:'待機中',waitingMessage:'評価済みバンドルまたは既存キャンペーンを読み込んでください。',campaignOrder:'キャンペーン順',tierSettings:'ティア設定',levelList:'レベル一覧',level:'レベル',tier:'ティア',family:'ファミリー',geometry:'Geometry',profile:'プロファイル',stageId:'StageSpec ID',emptyLevels:'バンドルを読み込むと、ファミリー内順位 → 10ステージ固定ティア → ティア内難易度順で表示します。',tierParameters:'10ステージ固定ティア / パラメーター',levelRange:'レベル範囲',emptyTiers:'データ読み込み後に設定できます。',emptyInspector:'ティアを選択するとGameplayProfileを編集できます。',tierDetail:'ティア別プロファイル編集',previous:'前へ',next:'次へ',chainSpeed:'チェーン速度',chainSpeedHelp:'速いほど難しくなります。単位はpx/sです。',shotSpeed:'射出速度倍率',shotSpeedHelp:'遅いほど難しくなります。開始速度・加速度・最高速度へ同じ倍率を適用します。',marbleColors:'マーブルの色数',colorHelp:'多いほどマッチを作りにくくなります。',totalMarbles:'総マーブル数',waveSize:'WAVEマーブル数',waveSizeHelp:'大きいほど投入時に列全体を遠くまで押し出します。',waveInterval:'WAVE間隔',emptyBoardInterval:'盤面クリア時のWAVE間隔',entryPadding:'投入後の余裕',entryPaddingHelp:'最後尾をINから何個分余計に進めるかを指定します。',deploymentSpeed:'WAVE投入速度',physicalRunWeights:'物理ラン長の相対重み',run1:'1個',run2:'2個',run3:'3個',run4:'4個以上',physicalRunHelp:'1～3個はその長さ、4個以上は長ランの基準重みです。ラン境界では必ず別色になります。',longRunTail:'長ランテール',longRunTailHelp:'1.00では5個=4個×20%、6個=×10%、7個=×5%。0では4個で打ち切ります。',visibleShare:'画面上の予測比率',averageRun:'平均ラン',singletonLimit:'単独色の連続上限',singletonLimitHelp:'1個ランがこの回数続くと、次は原則2個以上にします。',singletonOverflow:'単独色上限の超過率',singletonOverflowHelp:'上限後もさらに1個ランを許す確率です。低いほど単独色の長い連発が減ります。',sharedProfileNote:'変更はこのティアの10ステージすべてに反映されます。ステージ個別の割り当ては行いません。',averageTrack:'平均レーン',shortestTrack:'最短レーン',pushRatio:'押込率',wavePressure:'WAVE押し込み',campaignTitle:'キャンペーン名',notLoaded:'未読み込み',validated:'検証済み',validMessage:'固定10ステージティアのキャンペーンを生成できます。',campaignResumed:'キャンペーンを再開しました',v3QueueReset:'v3の色連続性はv5のティア既定値へ置換しました。その他の設定は復元されています。',v4TailDisabled:'v4設定を復元し、以前と同じ挙動のため長ランテールを0にしました。',loadFailed:'読み込み失敗',loaded:'読み込み完了',levels:'レベル',exported:'書き出しました'},
+    en:{workflow:'Workflow',loadBundle:'Load evaluated bundle / campaign',dropPrompt:'Drop a file here<br>or click to choose',jsonOnly:'Evaluated Bundle / Campaign JSON',bundleSummary:'Data summary',stageCount:'Stages',familyCount:'Families',tierCount:'Tiers',obstacleCount:'Obstacles',tierSettingsIO:'Save / load tier settings',loadTierSettings:'Load settings',exportTierSettings:'Export settings',tierSettingsHelp:'Replaces only parameters for the same number of tiers. Current stages and ordering stay unchanged. Accepts a tier-settings JSON or campaign JSON.',tierSettingsLoaded:'Tier settings loaded',tierSettingsExported:'Tier settings exported',tierCountMismatch:'Tier count does not match',replaceTierSettings:'Replace the current tier settings?',curveEditor:'Interpolate tier curve',parameter:'Parameter',firstTierValue:'Tier 1',lastTierValue:'Final tier',applyInterpolation:'Interpolate all tiers',curveHelp:'Linearly interpolates only the selected value. You can then adjust individual tiers in the inspector.',curveApplied:'Tier curve applied',exportHeading:'Export campaign JSON',exportButton:'Export campaign JSON',waiting:'Waiting',waitingMessage:'Load an evaluated stage bundle or existing campaign to begin.',campaignOrder:'Campaign order',tierSettings:'Tier settings',levelList:'Level list',level:'Level',tier:'Tier',family:'Family',geometry:'Geometry',profile:'Profile',stageId:'StageSpec ID',emptyLevels:'Load a bundle to order by family rank, fixed ten-stage tiers, then within-tier difficulty.',tierParameters:'Fixed ten-stage tiers / Parameters',levelRange:'Level range',emptyTiers:'Available after loading data.',emptyInspector:'Select a tier to edit its GameplayProfile.',tierDetail:'Tier GameplayProfile editor',previous:'Previous',next:'Next',chainSpeed:'Chain speed',chainSpeedHelp:'Faster is harder. Value is in px/s.',shotSpeed:'Projectile speed scale',shotSpeedHelp:'Slower is harder. The multiplier applies to start speed, acceleration, and maximum speed.',marbleColors:'Marble colors',colorHelp:'More colors make matches harder to form.',totalMarbles:'Total marbles',waveSize:'Marbles per wave',waveSizeHelp:'Larger waves push the whole chain farther during deployment.',waveInterval:'Wave interval',emptyBoardInterval:'Empty-board wave interval',entryPadding:'Entry padding',entryPaddingHelp:'Extra marble lengths moved after the final wave marble enters the lane.',deploymentSpeed:'Wave deployment speed',physicalRunWeights:'Physical run-length relative weights',run1:'1 marble',run2:'2 marbles',run3:'3 marbles',run4:'4+ marbles',physicalRunHelp:'Lengths 1–3 are exact; 4+ is the base weight for long runs. Every run boundary changes color.',longRunTail:'Long-run tail',longRunTailHelp:'At 1.00: length 5 = length 4 ×20%, length 6 ×10%, length 7 ×5%. At 0, runs stop at 4.',visibleShare:'Predicted on-board share',averageRun:'Average run',singletonLimit:'Singleton streak limit',singletonLimitHelp:'After this many one-marble runs, the next run normally has at least two marbles.',singletonOverflow:'Singleton overflow chance',singletonOverflowHelp:'Chance to allow another one-marble run after the limit. Lower values reduce long singleton streaks.',sharedProfileNote:'Changes affect all ten stages in this tier. Per-stage profile assignment is intentionally unavailable.',averageTrack:'Average track',shortestTrack:'Shortest track',pushRatio:'Push ratio',wavePressure:'WAVE pressure',campaignTitle:'Campaign title',notLoaded:'Not loaded',validated:'Validated',validMessage:'The fixed ten-stage-tier campaign is ready to export.',campaignResumed:'Campaign resumed',v3QueueReset:'v3 color continuity was replaced by v5 tier defaults. All other settings were restored.',v4TailDisabled:'v4 settings were restored with the long-run tail set to 0 to preserve prior behavior.',loadFailed:'Load failed',loaded:'Loaded',levels:'levels',exported:'Exported'}
+  };
+
+  const $ = id => document.getElementById(id);
+  const TIER_SIZE=10, BALL_SPACING=40.5;
+  const state = {lang:'ja',bundle:null,sourceName:'',sourceMeta:null,runRngPolicy:{mode:'random-per-attempt'},loadMode:'',levels:[],profiles:[],selectedIndex:-1,selectedTier:1,familyCount:0,tierCount:0,obstacleCount:0};
+
+  function t(key){ return I18N[state.lang][key] || key; }
+  function setLanguage(lang){
+    state.lang=lang;
+    document.documentElement.lang=lang;
+    $('langJa').classList.toggle('active',lang==='ja');
+    $('langEn').classList.toggle('active',lang==='en');
+    document.querySelectorAll('[data-i18n]').forEach(el=>{el.innerHTML=t(el.dataset.i18n)});
+    renderCurveOptions();
+    renderAll();
+  }
+
+  function finite(value){ return Number.isFinite(Number(value)); }
+  function clamp(value,min,max){ return Math.min(max,Math.max(min,Number(value))); }
+  function round(value,digits=2){ const p=10**digits; return Math.round(value*p)/p; }
+  function slug(value){ return String(value||'campaign').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'') || 'campaign'; }
+  function deepCopy(value){ return JSON.parse(JSON.stringify(value)); }
+
+  const CURVE_PARAMS={
+    baseSpeed:{label:'chainSpeed',min:1,max:250,step:1,digits:0},
+    projectileSpeedScale:{label:'shotSpeed',min:.4,max:2,step:.01,digits:2},
+    colorCount:{label:'marbleColors',min:2,max:5,step:1,digits:0},
+    totalBalls:{label:'totalMarbles',min:1,max:1000,step:1,digits:0},
+    waveSize:{label:'waveSize',min:3,max:80,step:1,digits:0,nested:'waveProfile'},
+    waveInterval:{label:'waveInterval',min:1,max:15,step:.25,digits:2,nested:'waveProfile'},
+    emptyBoardInterval:{label:'emptyBoardInterval',min:.25,max:5,step:.25,digits:2,nested:'waveProfile'},
+    entryPaddingMarbles:{label:'entryPadding',min:0,max:5,step:.25,digits:2,nested:'waveProfile'},
+    deploymentSpeed:{label:'deploymentSpeed',min:200,max:1200,step:10,digits:0,nested:'waveProfile'},
+    runWeight1:{label:'run1',min:0,max:100,step:1,digits:0,nested:'queueProfile',arrayKey:'runLengthWeights',index:0},
+    runWeight2:{label:'run2',min:0,max:100,step:1,digits:0,nested:'queueProfile',arrayKey:'runLengthWeights',index:1},
+    runWeight3:{label:'run3',min:0,max:100,step:1,digits:0,nested:'queueProfile',arrayKey:'runLengthWeights',index:2},
+    runWeight4:{label:'run4',min:0,max:100,step:1,digits:0,nested:'queueProfile',arrayKey:'runLengthWeights',index:3},
+    longRunTailScale:{label:'longRunTail',min:0,max:1,step:.05,digits:2,nested:'queueProfile'},
+    singletonStreakLimit:{label:'singletonLimit',min:1,max:4,step:1,digits:0,nested:'queueProfile'},
+    singletonOverflowChance:{label:'singletonOverflow',min:0,max:1,step:.01,digits:2,nested:'queueProfile'}
+  };
+  function profileIdForTier(tier){return`campaign-tier-${String(tier).padStart(2,'0')}`}
+  function getProfileValue(profile,key){const meta=CURVE_PARAMS[key],container=meta.nested?profile[meta.nested]:profile;return Number(meta.arrayKey?container[meta.arrayKey][meta.index]:container[key])}
+  function setProfileValue(profile,key,value){const meta=CURVE_PARAMS[key],v=round(clamp(value,meta.min,meta.max),meta.digits),container=meta.nested?profile[meta.nested]:profile;if(meta.arrayKey)container[meta.arrayKey][meta.index]=v;else container[key]=v;return v}
+  function renderCurveOptions(){const select=$('curveParameter'),current=select.value||'waveSize';select.replaceChildren(...Object.entries(CURVE_PARAMS).map(([key,meta])=>new Option(t(meta.label),key,false,key===current)));syncCurveEndpoints()}
+  function syncCurveEndpoints(){const key=$('curveParameter').value||'waveSize',meta=CURVE_PARAMS[key],first=state.profiles[0],last=state.profiles.at(-1);for(const id of ['curveStart','curveEnd']){const input=$(id);input.min=meta.min;input.max=meta.max;input.step=meta.step}if(first){$('curveStart').value=getProfileValue(first,key);$('curveEnd').value=getProfileValue(last,key)}$('applyCurve').disabled=!state.profiles.length}
+
+  function validateEvaluatedBundle(bundle){
+    if(!bundle || bundle.format!=='marble-popper-evaluated-stage-bundle' || bundle.schemaVersion!==2) throw new Error('Expected marble-popper-evaluated-stage-bundle schemaVersion 2.');
+    if(!Array.isArray(bundle.stages) || !bundle.stages.length) throw new Error('The evaluated bundle contains no stages.');
+    const ids=new Set(),families=new Map();
+    bundle.stages.forEach((entry,index)=>{
+      const stage=entry?.stage, family=entry?.sourceSummary?.familyCode || stage?.source?.family;
+      if(!stage || stage.format!=='marble-popper-stage' || stage.schemaVersion!==2) throw new Error(`Entry ${index+1} does not contain StageSpec v2.`);
+      if(!stage.stageId || ids.has(stage.stageId)) throw new Error(`Duplicate or missing stageId at entry ${index+1}.`);
+      ids.add(stage.stageId);
+      if(!family || !Number.isInteger(entry.familyRank) || entry.familyRank<1 || !finite(entry.difficulty) || !Number.isInteger(entry.rank)) throw new Error(`Entry ${index+1} has incomplete evaluation metadata.`);
+      if(stage.gameplay!==undefined) throw new Error(`StageSpec v2 ${stage.stageId} contains a forbidden gameplay block.`);
+      if(!families.has(family)) families.set(family,[]);
+      families.get(family).push(entry);
+    });
+    if(bundle.stages.length%TIER_SIZE!==0)throw new Error(`Stage count must be divisible by ${TIER_SIZE}.`);
+    if(families.size!==TIER_SIZE)throw new Error(`Fixed tiers require exactly ${TIER_SIZE} stage families.`);
+    const sizes=[...families.values()].map(items=>items.length),tierCount=bundle.stages.length/TIER_SIZE;
+    if(sizes.some(size=>size!==tierCount))throw new Error(`Every family must contain ${tierCount} stages.`);
+    for(const [family,items] of families){
+      const ranks=items.map(x=>x.familyRank).sort((a,b)=>a-b);
+      if(ranks.some((rank,i)=>rank!==i+1)) throw new Error(`Family ${family} must have contiguous familyRank values 1..${tierCount}.`);
+    }
+    return {families,tierCount,tierSize:TIER_SIZE};
+  }
+
+  // Canonical public-build defaults from marble-popper-main-v5_10_tier_settings_v5.json.
+  // Ten-tier campaigns reproduce these values exactly; other tier counts sample
+  // the same curve so smaller test bundles still receive coherent defaults.
+  const DEFAULT_TIER_PROFILE_VALUES=[
+    {totalBalls:280,colorCount:3,baseSpeed:108,projectileSpeedScale:1.13,runLengthWeights:[15,20,30,25],waveSize:16},
+    {totalBalls:290,colorCount:3,baseSpeed:110,projectileSpeedScale:1.11,runLengthWeights:[20,25,25,20],waveSize:16},
+    {totalBalls:300,colorCount:3,baseSpeed:112,projectileSpeedScale:1.09,runLengthWeights:[25,30,20,15],waveSize:17},
+    {totalBalls:310,colorCount:4,baseSpeed:113,projectileSpeedScale:1.07,runLengthWeights:[20,20,30,20],waveSize:17},
+    {totalBalls:320,colorCount:4,baseSpeed:115,projectileSpeedScale:1.05,runLengthWeights:[25,25,25,15],waveSize:18},
+    {totalBalls:330,colorCount:4,baseSpeed:117,projectileSpeedScale:1.03,runLengthWeights:[30,30,20,10],waveSize:18},
+    {totalBalls:340,colorCount:5,baseSpeed:119,projectileSpeedScale:1.01,runLengthWeights:[25,20,30,15],waveSize:19},
+    {totalBalls:350,colorCount:5,baseSpeed:120,projectileSpeedScale:.99,runLengthWeights:[25,30,25,10],waveSize:19},
+    {totalBalls:360,colorCount:5,baseSpeed:122,projectileSpeedScale:.97,runLengthWeights:[30,30,15,5],waveSize:20},
+    {totalBalls:370,colorCount:5,baseSpeed:124,projectileSpeedScale:.95,runLengthWeights:[30,20,10,5],waveSize:20}
+  ];
+  function sampleDefaultTierProfile(progress){
+    const scaled=clamp(progress,0,1)*(DEFAULT_TIER_PROFILE_VALUES.length-1),lo=Math.floor(scaled),hi=Math.ceil(scaled),mix=scaled-lo,a=DEFAULT_TIER_PROFILE_VALUES[lo],b=DEFAULT_TIER_PROFILE_VALUES[hi];
+    const blend=(key,digits=0)=>round(a[key]+(b[key]-a[key])*mix,digits);
+    return{totalBalls:Math.round(blend('totalBalls')),colorCount:Math.round(blend('colorCount')),baseSpeed:Math.round(blend('baseSpeed')),projectileSpeedScale:blend('projectileSpeedScale',2),runLengthWeights:a.runLengthWeights.map((value,index)=>round(value+(b.runLengthWeights[index]-value)*mix,2)),waveSize:Math.round(blend('waveSize'))};
+  }
+  function makeProfiles(tierCount){
+    const profiles=[];
+    for(let tier=1;tier<=tierCount;tier++){
+      const p=tierCount===1?0:(tier-1)/(tierCount-1);
+      const preset=sampleDefaultTierProfile(p);
+      profiles.push({
+        format:'marble-popper-gameplay-profile',schemaVersion:5,profileId:profileIdForTier(tier),
+        totalBalls:preset.totalBalls,colorCount:preset.colorCount,baseSpeed:preset.baseSpeed,projectileSpeedScale:preset.projectileSpeedScale,
+        queueProfile:{id:`campaign-queue-tier-${String(tier).padStart(2,'0')}`,runLengthWeights:preset.runLengthWeights,longRunTailScale:1,singletonStreakLimit:2,singletonOverflowChance:.1},
+        waveProfile:{waveSize:preset.waveSize,waveInterval:5,entryPaddingMarbles:2,deploymentSpeed:640,emptyBoardInterval:1.25}
+      });
+    }
+    return profiles;
+  }
+
+  function createLevels(bundle,tierCount){
+    const ordered=[];
+    for(let tier=1;tier<=tierCount;tier++){
+      const inTier=bundle.stages.filter(entry=>entry.familyRank===tier).sort((a,b)=>Number(a.difficulty)-Number(b.difficulty) || a.rank-b.rank || String(a.stage.stageId).localeCompare(String(b.stage.stageId)));
+      if(inTier.length!==TIER_SIZE)throw new Error(`Tier ${tier} must contain exactly ${TIER_SIZE} stages.`);
+      inTier.forEach((entry,tierIndex)=>ordered.push({entry,tier,tierRank:tierIndex+1,gameplayProfileId:profileIdForTier(tier)}));
+    }
+    return ordered.map((item,index)=>({...item,campaignLevel:index+1}));
+  }
+
+  function loadBundle(bundle,fileName){
+    const summary=validateEvaluatedBundle(bundle);
+    state.bundle=bundle; state.sourceName=fileName;state.sourceMeta=null;state.runRngPolicy={mode:'random-per-attempt'};state.loadMode='bundle'; state.familyCount=summary.families.size; state.tierCount=summary.tierCount;
+    state.obstacleCount=bundle.stages.reduce((sum,entry)=>sum+(Array.isArray(entry.stage?.geometry?.obstacles)?entry.stage.geometry.obstacles.length:0),0);
+    state.profiles=makeProfiles(state.tierCount); state.levels=createLevels(bundle,state.tierCount); state.selectedIndex=0;state.selectedTier=1;
+    $('fileState').textContent=`${fileName} · ${state.levels.length} ${t('levels')}`;
+    $('exportButton').disabled=false;$('loadTierSettings').disabled=false;$('exportTierSettings').disabled=false;
+    syncCurveEndpoints();
+    renderAll();
+    setStatus(false,t('validated'),t('validMessage'));
+  }
+
+  function copyPlayableSettings(target,source){
+    for(const key of ['totalBalls','colorCount','baseSpeed','projectileSpeedScale'])if(finite(Number(source?.[key])))target[key]=Number(source[key]);
+    for(const key of ['waveSize','waveInterval','entryPaddingMarbles','deploymentSpeed','emptyBoardInterval'])if(finite(Number(source?.waveProfile?.[key])))target.waveProfile[key]=Number(source.waveProfile[key]);
+    return target;
+  }
+  function migrateProfile(source,defaults){
+    const profile=copyPlayableSettings(deepCopy(defaults),source),version=Number(source?.schemaVersion);
+    if(version===5){
+      const queue=source.queueProfile||{};
+      profile.queueProfile={id:String(queue.id||profile.queueProfile.id),runLengthWeights:Array.isArray(queue.runLengthWeights)?queue.runLengthWeights.slice(0,4).map(Number):profile.queueProfile.runLengthWeights,longRunTailScale:Number(queue.longRunTailScale),singletonStreakLimit:Number(queue.singletonStreakLimit),singletonOverflowChance:Number(queue.singletonOverflowChance)};
+    }else if(version===4){
+      const queue=source.queueProfile||{};
+      profile.queueProfile={id:String(queue.id||profile.queueProfile.id),runLengthWeights:Array.isArray(queue.runLengthWeights)?queue.runLengthWeights.slice(0,4).map(Number):profile.queueProfile.runLengthWeights,longRunTailScale:0,singletonStreakLimit:Number(queue.singletonStreakLimit),singletonOverflowChance:Number(queue.singletonOverflowChance)};
+    }else if(version!==3)throw new Error(`Unsupported GameplayProfile v${source?.schemaVersion}. Expected v3, v4, or v5.`);
+    profile.format='marble-popper-gameplay-profile';profile.schemaVersion=5;profile.profileId=defaults.profileId;
+    return profile;
+  }
+  function validateCampaignForResume(campaign){
+    if(!campaign||campaign.format!=='marble-popper-campaign'||campaign.schemaVersion!==1)throw new Error('Expected CampaignSpec v1.');
+    if(!Array.isArray(campaign.levels)||!campaign.levels.length||campaign.levels.length%TIER_SIZE!==0)throw new Error('Campaign level count must be a non-zero multiple of 10.');
+    if(!Array.isArray(campaign.profiles)||!campaign.profiles.length)throw new Error('Campaign contains no GameplayProfiles.');
+    const tierCount=campaign.levels.length/TIER_SIZE,profiles=new Map();
+    campaign.profiles.forEach((profile,index)=>{if(!profile?.profileId||profiles.has(profile.profileId)||![3,4,5].includes(Number(profile.schemaVersion)))throw new Error(`Invalid or duplicate GameplayProfile at ${index+1}.`);profiles.set(profile.profileId,profile)});
+    campaign.levels.forEach((level,index)=>{const tier=Math.floor(index/TIER_SIZE)+1;if(level?.format!=='marble-popper-level'||level.schemaVersion!==1||level.campaignLevel!==index+1||level.tier!==tier||level.tierRank!==(index%TIER_SIZE)+1||!profiles.has(level.gameplayProfileId)||level.stage?.format!=='marble-popper-stage'||level.stage.schemaVersion!==2)throw new Error(`Campaign level ${index+1} is not a fixed ten-stage-tier LevelSpec.`)});
+    return{tierCount,profiles};
+  }
+  function loadCampaign(campaign,fileName){
+    const {tierCount,profiles}=validateCampaignForResume(campaign),defaults=makeProfiles(tierCount),versions=new Set();
+    const migrated=defaults.map((profile,index)=>{const level=campaign.levels[index*TIER_SIZE],source=profiles.get(level.gameplayProfileId);versions.add(Number(source.schemaVersion));return migrateProfile(source,profile)});
+    const entries=campaign.levels.map((level,index)=>{const evaluation=level.geometryEvaluation||{},familyCode=evaluation.familyCode||level.stage.source?.family||`family-${(index%TIER_SIZE)+1}`;return{stage:deepCopy(level.stage),difficulty:Number(evaluation.difficulty)||0,rank:Number(evaluation.globalRank)||index+1,familyRank:Number(evaluation.familyRank)||level.tier,metrics:deepCopy(evaluation.metrics||{}),sourceSummary:{familyCode,familyLabel:evaluation.familyLabel||familyCode}}});
+    const bundle={format:'marble-popper-evaluated-stage-bundle',schemaVersion:2,evaluation:deepCopy(campaign.source?.evaluation||{}),stages:entries};
+    state.bundle=bundle;state.sourceName=fileName;state.sourceMeta=deepCopy(campaign.source||{});state.runRngPolicy=deepCopy(campaign.runRngPolicy||{mode:'random-per-attempt'});state.loadMode='campaign';state.tierCount=tierCount;state.familyCount=new Set(entries.map(entry=>entry.sourceSummary.familyCode)).size;state.obstacleCount=entries.reduce((sum,entry)=>sum+(Array.isArray(entry.stage.geometry?.obstacles)?entry.stage.geometry.obstacles.length:0),0);state.profiles=migrated;state.levels=campaign.levels.map((level,index)=>({entry:entries[index],tier:level.tier,tierRank:level.tierRank,gameplayProfileId:profileIdForTier(level.tier),campaignLevel:level.campaignLevel}));state.selectedIndex=0;state.selectedTier=1;
+    $('campaignId').value=campaign.campaignId||'marble-popper-main-v5';$('campaignTitle').value=campaign.title||'Marble Popper Campaign';$('fileState').textContent=`${fileName} · ${state.levels.length} ${t('levels')}`;$('exportButton').disabled=false;$('loadTierSettings').disabled=false;$('exportTierSettings').disabled=false;syncCurveEndpoints();renderAll();
+    const notes=[];if(versions.has(3))notes.push(t('v3QueueReset'));if(versions.has(4))notes.push(t('v4TailDisabled'));setStatus(false,t('campaignResumed'),notes.join(' ')||t('validMessage'));
+  }
+
+  async function readFile(file){
+    try{ const root=JSON.parse(await file.text());if(root?.format==='marble-popper-campaign')loadCampaign(root,file.name);else loadBundle(root,file.name); }
+    catch(error){ console.error(error); setStatus(true,t('loadFailed'),error.message||String(error)); }
+  }
+
+  function buildTierSettings(){
+    if(!state.profiles.length||state.tierCount<1)throw new Error('Load stage data before exporting tier settings.');
+    state.profiles.forEach(validateGameplayProfileV5);
+    return{format:'marble-popper-tier-profile-set',schemaVersion:1,gameplayProfileSchemaVersion:5,tierSize:TIER_SIZE,tierCount:state.tierCount,title:`${$('campaignTitle').value.trim()||'Marble Popper Campaign'} Tier Settings`,createdAt:new Date().toISOString(),sourceCampaignId:slug($('campaignId').value),profiles:deepCopy(state.profiles)};
+  }
+  function tierSettingsFromSource(root){
+    if(root?.format==='marble-popper-tier-profile-set'){
+      if(root.schemaVersion!==1||root.gameplayProfileSchemaVersion!==5||root.tierSize!==TIER_SIZE||!Number.isInteger(root.tierCount)||root.tierCount<1||!Array.isArray(root.profiles)||root.profiles.length!==root.tierCount)throw new Error('Invalid tier-profile set. Expected schema v1 with GameplayProfile v5.');
+      root.profiles.forEach(validateGameplayProfileV5);
+      const defaults=makeProfiles(root.tierCount),profiles=root.profiles.map((profile,index)=>migrateProfile(profile,defaults[index]));
+      return{tierCount:root.tierCount,profiles,versions:new Set([5]),sourceType:'tier-profile-set'};
+    }
+    if(root?.format==='marble-popper-campaign'){
+      const {tierCount,profiles:byId}=validateCampaignForResume(root),defaults=makeProfiles(tierCount),versions=new Set();
+      const profiles=defaults.map((profile,index)=>{const level=root.levels[index*TIER_SIZE],source=byId.get(level.gameplayProfileId);versions.add(Number(source.schemaVersion));return migrateProfile(source,profile)});
+      profiles.forEach(validateGameplayProfileV5);
+      return{tierCount,profiles,versions,sourceType:'campaign'};
+    }
+    throw new Error('Expected a tier-profile set or CampaignSpec v1.');
+  }
+  function applyTierSettingsSource(root,fileName='tier-settings.json'){
+    if(!state.bundle||!state.profiles.length)throw new Error('Load an evaluated bundle or campaign before loading tier settings.');
+    const imported=tierSettingsFromSource(root);
+    if(imported.tierCount!==state.tierCount)throw new Error(`${t('tierCountMismatch')}: ${imported.tierCount} → ${state.tierCount}`);
+    state.profiles=imported.profiles;state.selectedTier=clamp(state.selectedTier,1,state.tierCount);syncCurveEndpoints();renderAll();
+    const notes=[];if(imported.versions.has(3))notes.push(t('v3QueueReset'));if(imported.versions.has(4))notes.push(t('v4TailDisabled'));
+    setStatus(false,t('tierSettingsLoaded'),`${fileName} · ${state.tierCount} tiers${notes.length?` · ${notes.join(' ')}`:''}`);
+    return imported;
+  }
+  async function readTierSettingsFile(file){
+    try{
+      const root=JSON.parse(await file.text());
+      if(!confirm(t('replaceTierSettings')))return false;
+      applyTierSettingsSource(root,file.name);return true;
+    }catch(error){console.error(error);setStatus(true,t('loadFailed'),error.message||String(error));return false}
+    finally{$('tierSettingsInput').value=''}
+  }
+  function downloadJSON(value,fileName){
+    const json=JSON.stringify(value,null,2)+'\n',blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=fileName;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);return fileName;
+  }
+  function exportTierSettings(){
+    try{
+      const settings=buildTierSettings(),fileName=`${slug($('campaignId').value)}_${settings.tierCount}_tier_settings_v5.json`;
+      downloadJSON(settings,fileName);setStatus(false,t('tierSettingsExported'),fileName);
+    }catch(error){console.error(error);setStatus(true,t('loadFailed'),error.message||String(error))}
+  }
+
+  function profileById(id){ return state.profiles.find(profile=>profile.profileId===id); }
+  function selectedLevel(){ return state.levels[state.selectedIndex] || null; }
+  function selectedProfile(){ return profileById(profileIdForTier(state.selectedTier)); }
+  function expandedRunWeights(queue){const base=(queue?.runLengthWeights||[0,0,0,0]).slice(0,4).map(value=>Math.max(0,Number(value)||0)),tail=clamp(Number(queue?.longRunTailScale)||0,0,1),four=base[3]||0;return[...base,four*.2*tail,four*.1*tail,four*.05*tail]}
+  function predictedRunDistribution(queue,samples=20000){
+    const weights=expandedRunWeights(queue),counts=Array(7).fill(0),sum=weights.reduce((a,b)=>a+b,0),limit=clamp(Math.floor(Number(queue?.singletonStreakLimit)||2),1,4),overflow=clamp(Number(queue?.singletonOverflowChance??.1),0,1);let seed=0x51f15e,streak=0;
+    const random=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let value=Math.imul(seed^seed>>>15,1|seed);value=value+Math.imul(value^value>>>7,61|value)^value;return((value^value>>>14)>>>0)/4294967296};
+    const draw=min=>{let available=0;for(let i=min-1;i<weights.length;i++)available+=weights[i];if(available<=0)return min;let roll=random()*available;for(let i=min-1;i<weights.length;i++){roll-=weights[i];if(roll<=0)return i+1}return weights.length};
+    for(let i=0;i<samples;i++){let length=draw(1);if(length===1&&streak>=limit&&random()>=overflow)length=draw(2);counts[length-1]++;streak=length===1?streak+1:0}
+    const marbles=counts.reduce((total,count,index)=>total+count*(index+1),0),shares=counts.map((count,index)=>marbles?count*(index+1)/marbles:0);return{weights,counts,shares,average:marbles/samples};
+  }
+  function familyLabel(entry){ return entry.sourceSummary?.familyLabel || entry.stage?.source?.familyLabel || entry.sourceSummary?.familyCode || entry.stage?.source?.family || '—'; }
+  function trackLengthOf(level){const value=Number(level?.entry?.stage?.geometry?.trackLength);if(Number.isFinite(value)&&value>0)return value;const path=level?.entry?.stage?.geometry?.path||[];let total=0;for(let i=1;i<path.length;i++)total+=Math.hypot(path[i].x-path[i-1].x,path[i].y-path[i-1].y);return total}
+  function tierMetrics(tier){const levels=state.levels.filter(level=>level.tier===tier),lengths=levels.map(trackLengthOf).filter(value=>value>0),profile=profileById(profileIdForTier(tier)),average=lengths.length?lengths.reduce((a,b)=>a+b,0)/lengths.length:0,shortest=lengths.length?Math.min(...lengths):0,push=profile?(profile.waveProfile.waveSize+profile.waveProfile.entryPaddingMarbles)*BALL_SPACING:0;return{levels,profile,average,shortest,push,averageRatio:average?push/average:0,shortestRatio:shortest?push/shortest:0}}
+
+  function renderSummary(){
+    $('stageCount').textContent=state.levels.length||'—'; $('familyCount').textContent=state.familyCount||'—'; $('tierCount').textContent=state.tierCount||'—'; $('obstacleCount').textContent=state.bundle?state.obstacleCount:'—';
+    $('levelCountLabel').textContent=`(${state.levels.length})`;
+  }
+
+  function renderLevels(){
+    $('levelTable').hidden=!state.levels.length; $('levelEmpty').hidden=!!state.levels.length;
+    $('levelRows').replaceChildren(...state.levels.map((level,index)=>{
+      const row=document.createElement('tr'); if(index===state.selectedIndex) row.classList.add('selected'); row.tabIndex=0;
+      const entry=level.entry, profile=profileById(profileIdForTier(level.tier));
+      row.innerHTML=`<td class="num">${level.campaignLevel}</td><td><span class="tier-tag">${level.tier}</span></td><td class="family">${escapeHtml(familyLabel(entry))}</td><td class="num score">${Number(entry.difficulty).toFixed(3)}</td><td class="profile-name">${escapeHtml(profile?.profileId||profileIdForTier(level.tier))}</td><td>${escapeHtml(entry.stage.stageId)}</td>`;
+      row.addEventListener('click',()=>selectLevel(index)); row.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectLevel(index)}}); return row;
+    }));
+  }
+
+  function renderTiers(){
+    if(!state.levels.length){ $('tierRows').innerHTML=`<tr><td colspan="10" class="empty">${t('emptyTiers')}</td></tr>`; return; }
+    const rows=[];
+    for(let tier=1;tier<=state.tierCount;tier++){
+      const tm=tierMetrics(tier),levels=tm.levels,profile=tm.profile,tr=document.createElement('tr'),min=levels[0].campaignLevel,max=levels.at(-1).campaignLevel;
+      if(tier===state.selectedTier)tr.classList.add('selected');tr.tabIndex=0;
+      tr.innerHTML=`<td><span class="tier-tag">${tier}</span></td><td>${min}–${max}</td><td class="num">${Math.round(tm.average)}px</td><td class="num">${profile.baseSpeed}</td><td class="num">${profile.totalBalls}</td><td class="num">${profile.colorCount}</td><td class="num">${profile.projectileSpeedScale.toFixed(2)}×</td><td class="num">${profile.waveProfile.waveSize}</td><td class="num pressure" title="${Math.round(tm.push)}px · shortest ${Math.round(tm.shortestRatio*100)}%">${Math.round(tm.averageRatio*100)}%</td><td class="num">${profile.waveProfile.waveInterval.toFixed(2)}s</td>`;
+      tr.addEventListener('click',()=>selectTier(tier));tr.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectTier(tier)}});rows.push(tr);
+    }
+    $('tierRows').replaceChildren(...rows);
+  }
+
+  function renderInspector(){
+    const profile=selectedProfile(),tm=tierMetrics(state.selectedTier);$('inspectorEmpty').hidden=!!profile;$('inspectorContent').hidden=!profile;if(!profile)return;
+    const min=tm.levels[0].campaignLevel,max=tm.levels.at(-1).campaignLevel;
+    $('selectedTierLabel').textContent=`${t('tier')} ${state.selectedTier} / ${state.tierCount}`;$('profileId').textContent=profile.profileId;$('detailLevelRange').textContent=`${min}–${max}`;$('detailAverageTrack').textContent=`${Math.round(tm.average)} px`;$('detailShortestTrack').textContent=`${Math.round(tm.shortest)} px`;$('detailWavePressure').textContent=`${Math.round(tm.push)} px · avg ${Math.round(tm.averageRatio*100)}% · shortest ${Math.round(tm.shortestRatio*100)}%`;
+    $('previousTier').disabled=state.selectedTier<=1;$('nextTier').disabled=state.selectedTier>=state.tierCount;
+    syncProfileFields(profile);
+    renderRunPreview(profile.queueProfile);
+  }
+
+  function renderRunPreview(queue){const preview=predictedRunDistribution(queue);$('averageRunLength').textContent=`${t('averageRun')} ${preview.average.toFixed(2)}`;$('runPreviewGrid').replaceChildren(...preview.shares.map((share,index)=>{const item=document.createElement('div');item.className='run-preview-item';item.innerHTML=`<div class="run-preview-bar" style="height:${Math.min(46,Math.max(2,share*120))}px"></div><strong>${index+1}</strong><span>${(share*100).toFixed(1)}%</span>`;return item}))}
+
+  function syncPair(rangeId,numberId,value,digits=0,suffix=''){
+    $(rangeId).value=value; $(numberId).value=value; const output=$(rangeId+'Value'); if(output)output.textContent=`${Number(value).toFixed(digits)}${suffix}`;
+  }
+  function syncProfileFields(profile){
+    syncPair('baseSpeed','baseSpeedNumber',profile.baseSpeed,0,' px/s'); syncPair('shotScale','shotScaleNumber',profile.projectileSpeedScale,2,'×'); $('colorCount').value=profile.colorCount;
+    syncPair('totalBalls','totalBallsNumber',profile.totalBalls,0,'');
+    profile.queueProfile.runLengthWeights.forEach((value,index)=>syncPair(`runWeight${index+1}`,`runWeight${index+1}Number`,value,0,''));
+    syncPair('longRunTailScale','longRunTailScaleNumber',profile.queueProfile.longRunTailScale,2,'×');
+    syncPair('singletonLimit','singletonLimitNumber',profile.queueProfile.singletonStreakLimit,0,'');
+    syncPair('singletonOverflow','singletonOverflowNumber',profile.queueProfile.singletonOverflowChance,2,'');
+    syncPair('waveSize','waveSizeNumber',profile.waveProfile.waveSize,0,'');syncPair('waveInterval','waveIntervalNumber',profile.waveProfile.waveInterval,2,' s');
+    syncPair('emptyBoardInterval','emptyBoardIntervalNumber',profile.waveProfile.emptyBoardInterval,2,' s');
+    syncPair('entryPadding','entryPaddingNumber',profile.waveProfile.entryPaddingMarbles,2,' marbles');syncPair('deploymentSpeed','deploymentSpeedNumber',profile.waveProfile.deploymentSpeed,0,' px/s');
+  }
+
+  function renderAll(){ renderSummary();renderLevels();renderTiers();renderInspector(); if(state.bundle)$('footerStatus').textContent=`✓ ${t('validated')} · ${state.levels.length} ${t('levels')}`; }
+  function selectLevel(index){state.selectedIndex=clamp(index,0,state.levels.length-1);const level=selectedLevel();if(level)state.selectedTier=level.tier;renderLevels();renderTiers();renderInspector();syncCurveEndpoints()}
+  function selectTier(tier){state.selectedTier=round(clamp(tier,1,state.tierCount),0);state.selectedIndex=state.levels.findIndex(level=>level.tier===state.selectedTier);renderLevels();renderTiers();renderInspector();syncCurveEndpoints()}
+  function setStatus(error,title,message){ $('statusBox').classList.toggle('error',error);$('statusTitle').textContent=title;$('statusMessage').textContent=message;$('footerStatus').textContent=error?title:(state.bundle?`✓ ${title}`:t('notLoaded')); }
+  function escapeHtml(value){ const div=document.createElement('div');div.textContent=String(value??'');return div.innerHTML; }
+
+  function updateProfile(path,value){
+    const profile=selectedProfile(); if(!profile)return;
+    setProfileValue(profile,path,value);renderLevels();renderTiers();renderInspector();syncCurveEndpoints();setStatus(false,t('validated'),t('validMessage'));
+  }
+
+  function applyCurve(){
+    if(!state.profiles.length)return;const key=$('curveParameter').value,meta=CURVE_PARAMS[key],start=clamp($('curveStart').value,meta.min,meta.max),end=clamp($('curveEnd').value,meta.min,meta.max);
+    state.profiles.forEach((profile,index)=>{const p=state.profiles.length===1?0:index/(state.profiles.length-1);setProfileValue(profile,key,start+(end-start)*p)});renderAll();syncCurveEndpoints();setStatus(false,t('curveApplied'),`${t(meta.label)}: ${getProfileValue(state.profiles[0],key)} → ${getProfileValue(state.profiles.at(-1),key)}`)
+  }
+
+  function buildCampaign(){
+    if(!state.bundle)throw new Error('No evaluated bundle loaded.');
+    const campaignId=slug($('campaignId').value),title=$('campaignTitle').value.trim()||'Marble Popper Campaign';
+    const campaign={format:'marble-popper-campaign',schemaVersion:1,campaignId,title,createdAt:new Date().toISOString(),source:{...(state.sourceMeta||{}),evaluatedBundleFile:state.sourceMeta?.evaluatedBundleFile||state.sourceName,evaluation:deepCopy(state.bundle.evaluation||{}),stageCount:state.levels.length,tierSize:TIER_SIZE,tierCount:state.tierCount},orderingPolicy:'family-rank-fixed-ten-tier-then-difficulty-v1',runRngPolicy:deepCopy(state.runRngPolicy||{mode:'random-per-attempt'}),profiles:deepCopy(state.profiles),levels:state.levels.map(level=>{const entry=level.entry,gameplayProfileId=profileIdForTier(level.tier);return{format:'marble-popper-level',schemaVersion:1,levelId:`${campaignId}-level-${String(level.campaignLevel).padStart(3,'0')}`,campaignLevel:level.campaignLevel,tier:level.tier,tierRank:level.tierRank,gameplayProfileId,geometryEvaluation:{difficulty:Number(entry.difficulty),globalRank:entry.rank,familyRank:entry.familyRank,familyCode:entry.sourceSummary?.familyCode||entry.stage.source?.family,familyLabel:familyLabel(entry),metrics:deepCopy(entry.metrics||{})},stage:deepCopy(entry.stage)}})};
+    validateCampaign(campaign); return campaign;
+  }
+
+  function validateCampaign(campaign){
+    const profileIds=new Set(campaign.profiles.map(profile=>profile.profileId)); if(profileIds.size!==campaign.profiles.length)throw new Error('GameplayProfile IDs must be unique.');
+    campaign.profiles.forEach(validateGameplayProfileV5);
+    campaign.levels.forEach((level,index)=>{const expectedTier=Math.floor(index/TIER_SIZE)+1;if(level.campaignLevel!==index+1||level.tier!==expectedTier||level.tierRank!==(index%TIER_SIZE)+1||level.gameplayProfileId!==profileIdForTier(expectedTier)||!profileIds.has(level.gameplayProfileId)||level.stage?.format!=='marble-popper-stage'||level.stage?.schemaVersion!==2||level.stage?.gameplay!==undefined)throw new Error(`Invalid fixed-tier campaign level ${index+1}.`)});
+    return true;
+  }
+  function validateGameplayProfileV5(profile){
+    const queue=profile?.queueProfile,wave=profile?.waveProfile,weights=queue?.runLengthWeights;
+    if(profile?.format!=='marble-popper-gameplay-profile'||profile.schemaVersion!==5||!finite(profile.totalBalls)||!finite(profile.baseSpeed)||!finite(profile.projectileSpeedScale)||profile.colorCount<2||profile.colorCount>5||!Array.isArray(weights)||weights.length!==4||weights.some(value=>!finite(value)||value<0)||weights.reduce((sum,value)=>sum+value,0)<=0||!finite(queue.longRunTailScale)||queue.longRunTailScale<0||queue.longRunTailScale>1||!Number.isInteger(queue.singletonStreakLimit)||queue.singletonStreakLimit<1||queue.singletonStreakLimit>4||!finite(queue.singletonOverflowChance)||queue.singletonOverflowChance<0||queue.singletonOverflowChance>1||!wave||!finite(wave.waveSize)||!finite(wave.waveInterval)||!finite(wave.entryPaddingMarbles)||!finite(wave.deploymentSpeed)||!finite(wave.emptyBoardInterval))throw new Error(`Invalid GameplayProfile: ${profile?.profileId||'unknown'}`);
+    return true;
+  }
+
+  function exportCampaign(){
+    try{
+      const campaign=buildCampaign(),fileName=`${campaign.campaignId}_${campaign.levels.length}_levels.json`;
+      downloadJSON(campaign,fileName);setStatus(false,t('exported'),fileName);
+    }catch(error){console.error(error);setStatus(true,t('loadFailed'),error.message||String(error))}
+  }
+
+  function bindPair(rangeId,numberId,path){ $(rangeId).addEventListener('input',event=>updateProfile(path,event.target.value));$(numberId).addEventListener('change',event=>updateProfile(path,event.target.value)); }
+  $('langJa').addEventListener('click',()=>setLanguage('ja'));$('langEn').addEventListener('click',()=>setLanguage('en'));
+  $('chooseFile').addEventListener('click',()=>$('fileInput').click());$('fileInput').addEventListener('change',event=>{const file=event.target.files[0];if(file)readFile(file)});
+  $('loadTierSettings').addEventListener('click',()=>$('tierSettingsInput').click());$('tierSettingsInput').addEventListener('change',event=>{const file=event.target.files[0];if(file)return readTierSettingsFile(file)});
+  ['dragenter','dragover'].forEach(name=>$('dropZone').addEventListener(name,event=>{event.preventDefault();$('dropZone').classList.add('drag')}));
+  ['dragleave','drop'].forEach(name=>$('dropZone').addEventListener(name,event=>{event.preventDefault();$('dropZone').classList.remove('drag')}));
+  $('dropZone').addEventListener('drop',event=>{const file=event.dataTransfer.files[0];if(file)readFile(file)});
+  $('exportTierSettings').addEventListener('click',exportTierSettings);$('exportButton').addEventListener('click',exportCampaign);$('previousTier').addEventListener('click',()=>selectTier(state.selectedTier-1));$('nextTier').addEventListener('click',()=>selectTier(state.selectedTier+1));
+  $('curveParameter').addEventListener('change',syncCurveEndpoints);$('applyCurve').addEventListener('click',applyCurve);
+  bindPair('baseSpeed','baseSpeedNumber','baseSpeed');bindPair('shotScale','shotScaleNumber','projectileSpeedScale');bindPair('totalBalls','totalBallsNumber','totalBalls');bindPair('waveSize','waveSizeNumber','waveSize');bindPair('waveInterval','waveIntervalNumber','waveInterval');bindPair('emptyBoardInterval','emptyBoardIntervalNumber','emptyBoardInterval');bindPair('entryPadding','entryPaddingNumber','entryPaddingMarbles');bindPair('deploymentSpeed','deploymentSpeedNumber','deploymentSpeed');
+  for(let length=1;length<=4;length++)bindPair(`runWeight${length}`,`runWeight${length}Number`,`runWeight${length}`);
+  bindPair('longRunTailScale','longRunTailScaleNumber','longRunTailScale');
+  bindPair('singletonLimit','singletonLimitNumber','singletonStreakLimit');bindPair('singletonOverflow','singletonOverflowNumber','singletonOverflowChance');$('colorCount').addEventListener('change',event=>updateProfile('colorCount',event.target.value));
+  document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(item=>item.classList.toggle('active',item===tab));$(tab.dataset.target).scrollIntoView({behavior:'smooth',block:'start'})}));
+
+  window.__campaignBuilderTest={validateEvaluatedBundle,validateCampaignForResume,migrateProfile,makeProfiles,createLevels,buildCampaign,validateCampaign,validateGameplayProfileV5,buildTierSettings,tierSettingsFromSource,applyTierSettingsSource,loadBundle,loadCampaign,applyCurve,selectTier,updateProfile,tierMetrics,predictedRunDistribution,getState:()=>state};
+  setLanguage('ja');
+})();
+</script>
+</body>
+</html>
