@@ -1,20 +1,20 @@
 {
   "format": "marble-popper-distribution",
   "schemaVersion": 1,
-  "package": "MarblePopper_v0.39",
-  "gameVersion": "0.39",
-  "builtAt": "2026-08-24T22:21:27.035163+00:00",
+  "package": "MarblePopper_v0.40",
+  "gameVersion": "0.40",
+  "builtAt": "2026-08-25T01:22:18.360869+00:00",
   "entryPoint": "index.html",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "bytes": 1611,
-      "sha256": "395fba6cd48d072a9c40d17b3bf0e833802466999a6fccacfef2d2a79f85b9cb"
+      "bytes": 2752,
+      "sha256": "668aa3b4cc562d0ed167a67c90bc4b6ef5efcf8b356a6e4f507b6bf270eef668"
     },
     {
       "path": "GITHUB_RELEASE_GUIDE.md",
       "bytes": 6895,
-      "sha256": "9183c51b3c8316aea7a6f3d8e4ed25d5af79f4ca1e14ff81bbf2b58b5bc03c28"
+      "sha256": "a5b01f1c04e2598c21249472bc34fde8e8b1488b5aac0e8db9ec1f68fcf8cd28"
     },
     {
       "path": "LICENSE",
@@ -23,28 +23,28 @@
     },
     {
       "path": "PLAY_MARBLE_POPPER.html",
-      "bytes": 190040,
-      "sha256": "54dc51ca3a1823f8fb2360362956946b0ac901d3122988ca5cd1d422f5776670"
+      "bytes": 192430,
+      "sha256": "9c96140ba5ff2a5748edb9ba8766badeee1aeebdd925b9fc84af8215023ebd97"
     },
     {
       "path": "README.md",
       "bytes": 4343,
-      "sha256": "ff8001434a6162881549e24d79251c5303c31439336780f80483117bc9b607a9"
+      "sha256": "2f01d27a4d739541e2c7926bfeb64319ef87b979b1b6c89e1c738cc431f96c60"
     },
     {
       "path": "README.txt",
       "bytes": 3889,
-      "sha256": "9d158e173381550e41befe47198a046e47c9f4247b8a3821b2cf3fae117d4955"
+      "sha256": "ebe7203fcae74bf3219b66323eb7dafdfb7a1deffff1c3c8c818991e492dfd5a"
     },
     {
       "path": "TOOLS_USER_GUIDE.md",
       "bytes": 44067,
-      "sha256": "46e8cfa64842fb9c15416068a29376730abc8aad40be5aa61c8679bf002f703f"
+      "sha256": "b80afc1a4822293112edfcad4e725d115f7536975a177bd6be5831b31786de4b"
     },
     {
       "path": "USER_GUIDE.md",
-      "bytes": 30539,
-      "sha256": "5547ba0fc99dab91a29c920fda6fd33205e7fdaee0fe3e53a995c721e74c92aa"
+      "bytes": 31534,
+      "sha256": "08957f249027b45b09833cc1f8a9a4efe4516924ffebe32577d230c63a6ad497"
     },
     {
       "path": "assets/audio/bgm.ogg",
@@ -55,6 +55,11 @@
       "path": "assets/audio/game_over.ogg",
       "bytes": 123046,
       "sha256": "512e819dd297bd20f9b566e1b463c3ca584994653c0e9aeb35119b44e160d4f2"
+    },
+    {
+      "path": "assets/audio/opening.ogg",
+      "bytes": 370404,
+      "sha256": "a21e0f24fc1bbc36770f25fe2d020ba45881dbb74a50a4fa2134ccf1102cde30"
     },
     {
       "path": "assets/audio/panic_loop.ogg",
@@ -78,8 +83,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 190040,
-      "sha256": "54dc51ca3a1823f8fb2360362956946b0ac901d3122988ca5cd1d422f5776670"
+      "bytes": 192430,
+      "sha256": "9c96140ba5ff2a5748edb9ba8766badeee1aeebdd925b9fc84af8215023ebd97"
     },
     {
       "path": "tools/CAMPAIGN_BUILDER.html",

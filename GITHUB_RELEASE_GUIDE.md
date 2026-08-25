@@ -28,14 +28,14 @@
 
 成功すると次ができます。
 
-- `dist/MarblePopper_v0.39/` — 展開済み公開パッケージ
-- `dist/MarblePopper_v0.39.zip` — GitHub Release添付用ZIP
+- `dist/MarblePopper_v0.40/` — 展開済み公開パッケージ
+- `dist/MarblePopper_v0.40.zip` — GitHub Release添付用ZIP
 
 検証は、必須ファイル、相対参照、キャンペーン100面、JavaScript構文、マニフェストのSHA-256、ZIPのCRCと内容一致を確認します。
 
 ## 3. ローカルで最終確認する
 
-1. `dist/MarblePopper_v0.39/index.html`を開く。
+1. `dist/MarblePopper_v0.40/index.html`を開く。
 2. 背景とBGMが読み込まれることを確認する。
 3. ニューゲームを開始して発射、交換、一時停止を確認する。
 4. ステージテストでステージ一覧を選べることを確認する。
@@ -55,14 +55,14 @@
 
 ソースコードまで公開するならプロジェクト一式を登録します。ただし、`.venv/`、`dist/`、一時ファイル、個人用データは`.gitignore`に従って除外してください。
 
-ゲームだけを公開する専用リポジトリなら、`dist/MarblePopper_v0.39/`の**中身**をリポジトリ直下へアップロードします。フォルダー自体を一段余計に置くとPages URLが変わります。
+ゲームだけを公開する専用リポジトリなら、`dist/MarblePopper_v0.40/`の**中身**をリポジトリ直下へアップロードします。フォルダー自体を一段余計に置くとPages URLが変わります。
 
 ## 5. Web画面から手動アップロードする
 
 1. リポジトリ画面で **Add file → Upload files** を選ぶ。
 2. 公開するファイルとフォルダーをドラッグ＆ドロップする。
 3. ファイル一覧で`index.html`、`assets/`、`tools/`、各Markdown、`LICENSE`が見えることを確認する。
-4. コミットメッセージを入力する。例: `Release Marble Popper v0.39`
+4. コミットメッセージを入力する。例: `Release Marble Popper v0.40`
 5. **Commit changes**を押す。
 
 GitHubのWebアップロードにはファイル数やファイルサイズの制約があります。失敗する場合はGitHub Desktopを使うか、配布ZIPをReleaseだけに添付し、Pages用ファイルを分けてアップロードしてください。
@@ -89,10 +89,10 @@ Pages確認項目:
 ## 7. GitHub Releaseを作る
 
 1. リポジトリの **Releases → Draft a new release** を開く。
-2. 新しいタグを作る。例: `v0.39`
-3. Release titleを入力する。例: `Marble Popper v0.39`
+2. 新しいタグを作る。例: `v0.40`
+3. Release titleを入力する。例: `Marble Popper v0.40`
 4. `CHANGELOG.md`の該当部分を説明へ貼る。
-5. `dist/MarblePopper_v0.39.zip`を添付する。
+5. `dist/MarblePopper_v0.40.zip`を添付する。
 6. 必要なら「公開候補」であることを明記する。
 7. **Publish release**を押す。
 

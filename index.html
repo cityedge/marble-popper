@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Marble Popper v0.39</title>
+<title>Marble Popper v0.40</title>
 <style>
   :root {
     color-scheme: dark;
@@ -40,12 +40,17 @@
   .title-marble.red{background:#ff5e67}.title-marble.gold{background:#ffc84a}.title-marble.blue{background:#51a7ff}
   .title-difficulty { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:12px; margin:-1% 2% 3%; color:#8fa6bc; font-size:12px; font-weight:900; letter-spacing:.08em; }
   .title-difficulty select { width:100%; min-width:0; color:var(--gold); border-color:rgba(255,195,74,.5); background:rgba(5,13,21,.82); }
+  .title-difficulty select:focus-visible { outline:0; }
   .menu { display:grid; gap:1.6%; }
   .menu-btn { position:relative; display:flex; align-items:center; width:100%; height:clamp(55px,7.2vh,72px); padding:0 7%; border:0; border-radius:38px; background:transparent; color:#a9bdd1; text-align:left; white-space:nowrap; font-size:clamp(18px,2.1vw,31px); letter-spacing:.06em; }
   .menu-btn::before { content:'◎'; display:inline-grid; place-items:center; width:1.7em; margin-right:.5em; color:#7791aa; }
-  .menu-btn:hover,.menu-btn.primary { color:var(--gold); background:rgba(9,18,27,.72); box-shadow:inset 0 0 0 2px rgba(255,195,74,.82),0 0 20px rgba(255,183,44,.12); }
-  .menu-btn.primary::before { color:var(--gold); }
-  .continue-stage { flex:none; margin-left:auto; padding:.28em .65em; border:1px solid rgba(125,153,181,.46); border-radius:999px; color:#dce8f4; font-size:.48em; letter-spacing:.04em; }
+  .menu-btn:hover,.menu-btn:focus-visible { outline:0; color:var(--gold); background:rgba(9,18,27,.72); box-shadow:inset 0 0 0 2px rgba(255,195,74,.82),0 0 20px rgba(255,183,44,.12); }
+  .menu-btn:hover::before,.menu-btn:focus-visible::before { color:var(--gold); }
+  .menu-btn > span { min-width:0; }
+  #continueBtn { display:grid; grid-template-columns:1.7em minmax(0,1fr); grid-template-rows:auto auto; column-gap:.5em; align-content:center; }
+  #continueBtn::before { grid-row:1 / 3; width:1.7em; margin-right:0; }
+  #continueBtn > span { grid-column:2; overflow:hidden; line-height:1.05; text-overflow:ellipsis; }
+  .continue-stage { grid-column:2; justify-self:start; max-width:100%; min-width:0; margin-top:.28em; overflow:hidden; padding:.18em .62em; border:1px solid rgba(125,153,181,.46); border-radius:999px; color:#dce8f4; font-size:.38em; line-height:1.15; letter-spacing:.04em; text-overflow:ellipsis; white-space:nowrap; }
   .setup-panel { position:absolute; left:7%; top:8%; bottom:8%; width:48%; padding:5% 5.2%; overflow:auto; background:linear-gradient(105deg,rgba(5,13,21,.97),rgba(8,20,30,.88)); border:1px solid rgba(87,115,142,.62); border-radius:34px; box-shadow:0 26px 70px rgba(0,0,0,.45); }
   .setup-panel h2 { margin:0 0 8px; font-size:clamp(28px,3.2vw,48px); letter-spacing:.04em; }
   .setup-panel p { margin:0 0 24px; color:var(--muted); line-height:1.55; }
@@ -126,7 +131,7 @@
         <div class="campaign-badge" id="activeCampaignBadge"></div>
         <label class="title-difficulty"><span data-i18n="difficulty">DIFFICULTY</span><select id="campaignDifficultySelect" aria-label="Campaign difficulty"><option value="EASY">EASY</option><option value="NORMAL">NORMAL</option><option value="HARD">HARD</option><option value="VERY_HARD">VERY HARD</option></select></label>
         <nav class="menu">
-          <button class="menu-btn primary" id="newGameBtn" data-i18n="newGame">NEW GAME</button>
+          <button class="menu-btn" id="newGameBtn" data-i18n="newGame">NEW GAME</button>
           <button class="menu-btn" id="continueBtn">CONTINUE</button>
           <button class="menu-btn" id="survivalModeBtn" data-i18n="survival">SURVIVAL</button>
           <button class="menu-btn" id="highScoresModeBtn" data-i18n="highScores">HIGH SCORES</button>
@@ -434,6 +439,7 @@
   let maxChain = 0;
   let chainDepth = 0;
   let lastTime = performance.now();
+  let autoPauseGuardUntil = 0;
   let flashText = '';
   let flashTimer = 0;
   let matchBursts = [];
@@ -717,6 +723,7 @@
     else if(screen==='paused')pauseScreen.classList.add('active');
     else if(screen==='result')resultScreen.classList.add('active');
     if(screen==='paused')stageSelectBtn.hidden=activeGameMode==='campaign';
+    if(openingScreen())startOpeningMusic(false);else stopOpeningMusic(false);
     lastTime=performance.now();
   }
   function randomRunSeed(){return((Date.now()^Math.floor(Math.random()*0xffffffff))>>>0)||1}
@@ -876,13 +883,13 @@
       const ids=segments.flatMap(seg=>seg.marbles.map(m=>m.id));nextMarbleId=Math.max(1,...ids)+1;
       waveState={phase:scenario.phase||'deploying',waveIndex:scenario.waveIndex||1,totalWaves:Infinity,remaining:scenario.remaining||0,timer:scenario.timer||0,connected:!!scenario.connected,rumbleStarted:!!scenario.rumbleStarted,preExistingIds:new Set(scenario.preExistingIds||[])};
     },
-    snapshot:()=>({wave:{phase:waveState.phase,waveIndex:waveState.waveIndex,remaining:waveState.remaining,connected:waveState.connected,rumbleStarted:waveState.rumbleStarted},segments:segments.map(seg=>({driven:seg.driven,attracting:seg.attracting,marbles:seg.marbles.map(m=>({id:m.id,s:m.s,waveId:m.waveId}))})),spawnQueue:[...spawnQueue],shotBlocked:shotTemporarilyBlocked()}),
+    snapshot:()=>({wave:{phase:waveState.phase,waveIndex:waveState.waveIndex,remaining:waveState.remaining,connected:waveState.connected,rumbleStarted:waveState.rumbleStarted},segments:segments.map(seg=>({driven:seg.driven,attracting:seg.attracting,marbles:seg.marbles.map(m=>({id:m.id,s:m.s,waveId:m.waveId}))})),spawnQueue:[...spawnQueue],shotBlocked:shotTemporarilyBlocked(),effectTimers:{...effectTimers},outPulse}),
     repair:()=>repairDriveInvariant(true),
     syncRumble:updateWaveRumbleSync,
     stepState:updateWaveState,
     destroyIds:ids=>{const doomed=new Set(ids);return destroyByEffect(m=>doomed.has(m.id),{kind:'test'})}
   };
-  function returnToTitle(){paused=true;aimVisible=false;stopStageMusic(true);setShellScreen('title')}
+  function returnToTitle(){paused=false;aimVisible=false;stopStageMusic(true);setShellScreen('title')}
   function newScoreState(){return{total:0,buckets:{marbleClear:0,specialClear:0,shotStreak:0,magneticChain:0,gapShot:0,specialActivate:0,waveClearBonus:0,safetyBonus:0},successfulShots:0,failedShots:0,currentStreak:0,maxStreak:0,gapShots:0,maxGaps:0}}
   function addScore(bucket,points,{x=W/2,y=H/2,label='',tone='normal',small=false,show=true}={}){
     points=Math.max(0,Math.round(points));if(!points)return;
@@ -933,10 +940,12 @@
   const MUSIC_CROSSFADE=.5;
   const PANIC_ENTER_REMAINING=.16;
   const PANIC_EXIT_REMAINING=.23;
+  const openingBgm=new Audio('assets/audio/opening.ogg');
   const normalBgm=new Audio('assets/audio/bgm.ogg');
   const panicBgm=new Audio('assets/audio/panic_loop.ogg');
   const stageClearBgm=new Audio('assets/audio/stage_clear.ogg');
   const gameOverBgm=new Audio('assets/audio/game_over.ogg');
+  openingBgm.preload='auto';openingBgm.loop=true;
   normalBgm.preload='metadata';normalBgm.loop=false;
   panicBgm.preload='auto';panicBgm.loop=true;
   stageClearBgm.preload='auto';stageClearBgm.loop=true;
@@ -944,8 +953,8 @@
   let audioSettings=loadAudioSettings();
   let audioCtx=null, masterGain=null, sfxGain=null, sfxLimiter=null, noiseBuffer=null,waveRumble=null;
   let soundEnabled=!audioSettings.muted;
-  let musicSessionActive=false,panicActive=false,stageClearMusicActive=false,gameOverMusicActive=false,normalMix=1,panicMix=0;
-  let normalPlayPending=false,panicPlayPending=false,stageClearPlayPending=false,gameOverPlayPending=false;
+  let musicSessionActive=false,openingMusicActive=false,panicActive=false,stageClearMusicActive=false,gameOverMusicActive=false,normalMix=1,panicMix=0;
+  let openingPlayPending=false,normalPlayPending=false,panicPlayPending=false,stageClearPlayPending=false,gameOverPlayPending=false;
 
   function loadAudioSettings(){
     const defaults={master:80,bgm:55,sfx:50,muted:false};
@@ -992,28 +1001,39 @@
   }
   function applyMusicVolumes(){
     const base=musicBaseVolume();
+    openingBgm.volume=Math.max(0,Math.min(1,base));
     normalBgm.volume=Math.max(0,Math.min(1,base*normalMix*normalLoopEnvelope()));
     panicBgm.volume=Math.max(0,Math.min(1,base*panicMix));
     stageClearBgm.volume=Math.max(0,Math.min(1,base));
     gameOverBgm.volume=Math.max(0,Math.min(1,base));
   }
   function safeMediaPlay(media){
-    const pendingKey=media===normalBgm?'normal':media===panicBgm?'panic':media===stageClearBgm?'clear':'gameover';
-    if((pendingKey==='normal'&&normalPlayPending)||(pendingKey==='panic'&&panicPlayPending)||(pendingKey==='clear'&&stageClearPlayPending)||(pendingKey==='gameover'&&gameOverPlayPending)||!media.paused)return;
-    if(pendingKey==='normal')normalPlayPending=true;else if(pendingKey==='panic')panicPlayPending=true;else if(pendingKey==='clear')stageClearPlayPending=true;else gameOverPlayPending=true;
+    const pendingKey=media===openingBgm?'opening':media===normalBgm?'normal':media===panicBgm?'panic':media===stageClearBgm?'clear':'gameover';
+    if((pendingKey==='opening'&&openingPlayPending)||(pendingKey==='normal'&&normalPlayPending)||(pendingKey==='panic'&&panicPlayPending)||(pendingKey==='clear'&&stageClearPlayPending)||(pendingKey==='gameover'&&gameOverPlayPending)||!media.paused)return;
+    if(pendingKey==='opening')openingPlayPending=true;else if(pendingKey==='normal')normalPlayPending=true;else if(pendingKey==='panic')panicPlayPending=true;else if(pendingKey==='clear')stageClearPlayPending=true;else gameOverPlayPending=true;
     const result=media.play();
-    if(result&&typeof result.finally==='function')result.catch(()=>{}).finally(()=>{if(pendingKey==='normal')normalPlayPending=false;else if(pendingKey==='panic')panicPlayPending=false;else if(pendingKey==='clear')stageClearPlayPending=false;else gameOverPlayPending=false});
+    if(result&&typeof result.finally==='function')result.catch(()=>{}).finally(()=>{if(pendingKey==='opening')openingPlayPending=false;else if(pendingKey==='normal')normalPlayPending=false;else if(pendingKey==='panic')panicPlayPending=false;else if(pendingKey==='clear')stageClearPlayPending=false;else gameOverPlayPending=false});
+  }
+  function openingScreen(){return ['title','setup','survival','settings','highscores'].includes(shellScreen)}
+  function startOpeningMusic(resetPosition=false){
+    const entering=!openingMusicActive;
+    openingMusicActive=true;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();
+    if(resetPosition||entering)openingBgm.currentTime=0;
+    applyMusicVolumes();safeMediaPlay(openingBgm);
+  }
+  function stopOpeningMusic(resetPosition=false){
+    openingMusicActive=false;openingPlayPending=false;openingBgm.pause();if(resetPosition)openingBgm.currentTime=0;applyMusicVolumes();
   }
   function startStageMusic(resetPosition=true){
-    musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=false;normalMix=1;panicMix=0;
+    stopOpeningMusic(false);musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=false;normalMix=1;panicMix=0;
     if(resetPosition){normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.currentTime=0}
     applyMusicVolumes();safeMediaPlay(normalBgm);if(waveState.phase==='deploying'&&waveState.rumbleStarted)startWaveRumble();
   }
   function startStageClearMusic(){
-    stopWaveRumble();musicSessionActive=true;panicActive=false;stageClearMusicActive=true;gameOverMusicActive=false;normalBgm.pause();panicBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;gameOverBgm.currentTime=0;stageClearBgm.pause();stageClearBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(stageClearBgm)
+    stopWaveRumble();stopOpeningMusic(false);musicSessionActive=true;panicActive=false;stageClearMusicActive=true;gameOverMusicActive=false;normalBgm.pause();panicBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;gameOverBgm.currentTime=0;stageClearBgm.pause();stageClearBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(stageClearBgm)
   }
   function startGameOverMusic(){
-    stopWaveRumble();musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=true;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.pause();gameOverBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(gameOverBgm)
+    stopWaveRumble();stopOpeningMusic(false);musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=true;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.pause();gameOverBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(gameOverBgm)
   }
   function stopStageMusic(resetPosition=true){
     stopWaveRumble();
@@ -1035,9 +1055,11 @@
     else if(remaining<=PANIC_ENTER_REMAINING){panicActive=true;panicBgm.currentTime=0}
   }
   function updateMusic(dt){
+    if(openingMusicActive){applyMusicVolumes();return}
     if(!musicSessionActive)return;
     if(stageClearMusicActive||gameOverMusicActive){applyMusicVolumes();return}
-    if(shellScreen!=='playing'||paused||gameOver||cleared){pauseStageMusic();return}
+    if(shellScreen==='paused'){applyMusicVolumes();return}
+    if(shellScreen!=='playing'||gameOver||cleared){pauseStageMusic();return}
     updatePanicState();
     const step=Math.min(1,dt/MUSIC_CROSSFADE),normalTarget=panicActive?0:1,panicTarget=panicActive?1:0;
     normalMix+=Math.sign(normalTarget-normalMix)*Math.min(Math.abs(normalTarget-normalMix),step);
@@ -1159,7 +1181,7 @@
 
   function toggleSound() {
     audioSettings.muted=!audioSettings.muted;soundEnabled=!audioSettings.muted;
-    if(soundEnabled){ensureAudio();resumeStageMusic()}else stopWaveRumble();
+    if(soundEnabled){ensureAudio();if(openingScreen())startOpeningMusic(false);else resumeStageMusic()}else stopWaveRumble();
     saveAudioSettings();applyAudioLevels();
   }
 
@@ -1512,6 +1534,10 @@
       const message=uiLanguage==='ja'?'進行中のキャンペーンをステージ1から始め直します。ハイスコアは残ります。よろしいですか？':'Restart the current campaign from Stage 1? High scores will be kept.';
       if(!window.confirm(message))return;
     }
+    // Closing the native confirmation dialog can deliver a delayed blur after
+    // the playfield has already opened. Do not interpret that dialog blur as
+    // an intentional background-tab pause.
+    autoPauseGuardUntil=performance.now()+1000;
     startMainCampaignLevel(0);
   }
   function continueCampaign(){const index=continueLevelIndex();if(index>=0)startMainCampaignLevel(index)}
@@ -1742,10 +1768,6 @@
     if(nextColor===currentColor)nextColor=randomNextAmmoColor(currentColor);
   }
 
-  function waveBoardSettled(){
-    return projectiles.length===0&&matchBursts.length===0&&smokeEffects.length===0&&!segments.some(seg=>seg.attracting);
-  }
-
   function beginNextWave(){
     if(activeGameMode==='survival'&&!spawnQueue.length){
       spawnQueue=generateQueue(stageWaveProfile.waveSize);
@@ -1840,10 +1862,9 @@
       if(!segments.length&&(spawnQueue.length||activeGameMode==='survival'))beginWaveClearBonus(waveState.timer);
       waveState.timer=Math.max(0,waveState.timer-dt);
       if(!segments.length)waveState.timer=Math.min(waveState.timer,stageWaveProfile.emptyBoardInterval);
-      if(waveState.timer<=0){settleWaveClearBonus();waveState.phase='arming'}
+      if(waveState.timer<=0){settleWaveClearBonus();beginNextWave()}
       return;
     }
-    if(waveState.phase==='arming'&&waveBoardSettled())beginNextWave();
   }
 
   function spawnFirst() {
@@ -2440,7 +2461,7 @@
     swaps++;
     flashText='SWAP'; flashTimer=.25;
   }
-  function shotTemporarilyBlocked(){return clearPending||!!safetySequence||waveState.phase==='arming'}
+  function shotTemporarilyBlocked(){return clearPending||!!safetySequence}
 
   function fire(x=shooterX, targetX=x, targetY=0, touchMode=false) {
     if (paused || gameOver || cleared || shotTemporarilyBlocked() || fireCooldown>0) return;
@@ -3110,11 +3131,11 @@
     ctx.save();
     if(stageWaveProfile.enabled){
       const deploying=waveState.phase==='deploying';
-      const waiting=waveState.phase==='waiting',arming=waveState.phase==='arming';
-      if(deploying||waiting||arming){
+      const waiting=waveState.phase==='waiting';
+      if(deploying||waiting){
         const label=deploying
           ?`${uiLanguage==='ja'?'WAVE流入中':'WAVE INCOMING'}  ${waveState.waveIndex}${Number.isFinite(waveState.totalWaves)?`/${waveState.totalWaves}`:''}`
-          :arming?(uiLanguage==='ja'?'WAVE準備中…':'WAVE READY…'):`${uiLanguage==='ja'?'次のWAVE':'NEXT WAVE'}  ${Math.max(0,waveState.timer).toFixed(1)}s`;
+          :`${uiLanguage==='ja'?'次のWAVE':'NEXT WAVE'}  ${Math.max(0,waveState.timer).toFixed(1)}s`;
         ctx.font='800 17px system-ui';ctx.textAlign='center';
         const width=Math.min(430,ctx.measureText(label).width+42);
         ctx.fillStyle=deploying?'rgba(65,25,10,.9)':'rgba(4,11,18,.78)';roundedRect(W/2-width/2,18,width,36,18);ctx.fill();
@@ -3182,7 +3203,9 @@
   function loop(now) {
     let dt=(now-lastTime)/1000;
     lastTime=now;
-    dt=Math.min(dt,.033);
+    // Native dialogs can leave one queued RAF callback whose timestamp predates
+    // the reset's performance.now(). Never let that stale frame run backwards.
+    dt=Math.max(0,Math.min(dt,.033));
     if(shellScreen==='playing')update(dt);
     updateMusic(dt);
     draw();
@@ -3236,8 +3259,14 @@
     swapAmmo();
   });
 
+  document.addEventListener('pointerdown',()=>{
+    ensureAudio();if(openingScreen())startOpeningMusic(false);
+  },{capture:true});
+
   window.addEventListener('keydown',e=>{
     ensureAudio();
+    if(openingScreen())startOpeningMusic(false);
+    if (e.code==='Escape'&&(shellScreen==='playing'||shellScreen==='paused')&&!e.repeat) {e.preventDefault();togglePause();return}
     if (e.code==='Escape'&&(shellScreen==='setup'||shellScreen==='survival'))returnToTitle();
     if (e.code==='KeyR'&&shellScreen==='playing') reset(seed);
     if (e.code==='KeyF'&&shellScreen==='playing'&&activeGameMode!=='survival'&&!e.repeat) forceStageClear();
@@ -3247,7 +3276,7 @@
   function togglePause() {
     if (gameOver || cleared || !['playing','paused'].includes(shellScreen)) return;
     if(shellScreen==='paused'){paused=false;setShellScreen('playing');resumeStageMusic()}
-    else{paused=true;pauseStageMusic();setShellScreen('paused')}
+    else{paused=true;setShellScreen('paused')}
     lastTime=performance.now();
   }
   pauseBtn.addEventListener('click',()=>{ensureAudio(); togglePause();});
@@ -3318,11 +3347,11 @@
   document.getElementById('resultTitleBtn').addEventListener('click',returnToTitle);
 
   document.addEventListener('visibilitychange',()=>{
-    if (document.hidden && shellScreen==='playing'&&!gameOver&&!cleared){paused=true;pauseStageMusic();setShellScreen('paused')}
+    if (document.hidden && performance.now()>=autoPauseGuardUntil&&shellScreen==='playing'&&!gameOver&&!cleared){paused=true;pauseStageMusic();setShellScreen('paused')}
     lastTime=performance.now();
   });
   window.addEventListener('blur',()=>{
-    if (shellScreen==='playing'&&!gameOver&&!cleared){paused=true;pauseStageMusic();setShellScreen('paused')}
+    if (performance.now()>=autoPauseGuardUntil&&shellScreen==='playing'&&!gameOver&&!cleared){paused=true;pauseStageMusic();setShellScreen('paused')}
   });
 
   // Initialize the hidden engine state; Stage Test assigns a fresh run seed on PLAY.

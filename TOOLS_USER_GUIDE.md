@@ -1006,7 +1006,7 @@ Evaluatorは形状とPC垂直弾道だけを評価します。弾速、WAVE、�
 - Evaluated Stage Bundle: v2
 - GameplayProfile: v5
 - CampaignSpec: v1
-- ゲーム互換版: Marble Popper v0.39
+- ゲーム互換版: Marble Popper v0.40
 - ライセンス: MIT License
 
 ツールの計算式や出力形式を改造して公開する場合は、バージョンやモデル名を変更し、生成データの`source`／`evaluation`へ由来を残してください。
