@@ -2,6 +2,20 @@
 
 公開パッケージに関係する変更を記録します。開発途中の細かな履歴はGitのコミット履歴を参照してください。
 
+## v0.42 — BASE ending sequence
+
+- BASE到達によるゲームオーバー時に、BASE波紋とボム音を追加
+- ステージクリア時も同じBASE終端演出を使用
+- 両方とも0.75秒の波紋が完全に終了してから0.3秒待ち、リザルト画面へ遷移
+- 終端演出中はレーン進行と射撃を停止し、リザルトBGMへの切り替えは画面遷移時に実施
+
+## v0.41 — SPAWN / BASE terminology
+
+- ゲーム、Stage Generator、Difficulty Evaluatorのレーン端表示を`IN` / `OUT`から`SPAWN` / `BASE`へ変更
+- Campaign Builderの投入位置ヘルプと、ユーザーガイド・ツールガイド・仕様書・設計資料を同じ用語へ統一
+- Stage Generator v0.19、Difficulty Evaluator v0.6、Campaign Builder v0.9を公開パッケージへ同梱
+- StageSpec、CampaignSpec、セーブデータの形式は変更なし。内部実装の従来名は互換性のため維持
+
 ## v0.40 — 公開候補
 
 - WAVE直前の射撃禁止／安定待ち状態を廃止し、タイマー終了と同時に投入開始

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Marble Difficulty Evaluator v0.5</title>
+<title>Marble Difficulty Evaluator v0.6</title>
 <style>
   :root{
     color-scheme:dark;
@@ -65,7 +65,7 @@
 </head>
 <body>
 <header>
-  <div><h1>Marble Difficulty Evaluator v0.5</h1><div class="sub">StageSpec v1/v2 · geometry-only PC vertical-fire accessibility model</div></div>
+  <div><h1>Marble Difficulty Evaluator v0.6</h1><div class="sub">StageSpec v1/v2 · geometry-only PC vertical-fire accessibility model</div></div>
   <button id="loadBtn" class="primary">Load StageSpecs</button>
   <input id="fileInput" type="file" accept=".json,application/json" multiple hidden />
   <button id="clearBtn">Clear</button>
@@ -107,7 +107,7 @@
           <div class="field"><label>a — evaluation marbles</label><input id="paramA" type="number" min="1" max="20" step="1" value="8" /></div>
           <div class="field"><label>b — tail decay</label><input id="paramB" type="number" min="0" max="0.25" step="0.005" value="0.015" /></div>
           <div class="field"><label>f — tail floor</label><input id="paramF" type="number" min="0" max="1" step="0.05" value="0.10" /></div>
-          <div class="field"><label>c — OUT exponent</label><input id="paramC" type="number" min="0" max="8" step="0.25" value="2" /></div>
+          <div class="field"><label>c — BASE exponent</label><input id="paramC" type="number" min="0" max="8" step="0.25" value="2" /></div>
           <div class="field"><label>λ — persistence</label><input id="paramLambda" type="number" min="0" max="0.995" step="0.01" value="0.80" /></div>
           <div class="field"><label>s — sustained mix</label><input id="paramS" type="number" min="0" max="1" step="0.05" value="0.40" /></div>
           <button id="recalcBtn" class="primary" disabled>Recalculate All</button>
@@ -117,7 +117,7 @@
           u(k)=d(k)/a<br>
           sustained pressure: S(k)=λS(k−1)+(1−λ)u(k)<br>
           sustained area: A<sub>sus</sub>=(1/n)ΣS(k)<sup>2</sup><br>
-          OUT mean: D<sub>out</sub>=Σ[w(k)u(k)] / Σw(k), &nbsp; w(k)=progress(k)<sup>c</sup><br>
+          BASE mean: D<sub>base</sub>=Σ[w(k)u(k)] / Σw(k), &nbsp; w(k)=progress(k)<sup>c</sup><br>
           final score=100×[(1−s)D<sub>out</sub>+s·A<sub>sus</sub>]
         </div>
         <div id="horizon" class="tiny" style="margin-top:6px">Tail floor: 0.10 persists through all existing tail marbles</div>
@@ -445,8 +445,8 @@ function drawObstacles(stage){
 }
 function drawEndpoints(stage){
   const a=trackPos(stage.track,0),b=trackPos(stage.track,stage.track.length);ctx.save();ctx.font='12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=3;
-  ctx.fillStyle='#080b10';ctx.strokeStyle='#607187';ctx.beginPath();ctx.arc(a.x,a.y,22,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#aab7c8';ctx.fillText('IN',a.x,a.y);
-  ctx.fillStyle='#030507';ctx.strokeStyle='#a75252';ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,25,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#d28b8b';ctx.fillText('OUT',b.x,b.y);ctx.restore();
+  ctx.font='800 9px system-ui';ctx.fillStyle='#080b10';ctx.strokeStyle='#607187';ctx.beginPath();ctx.arc(a.x,a.y,22,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#aab7c8';ctx.fillText('SPAWN',a.x,a.y);
+  ctx.fillStyle='#030507';ctx.strokeStyle='#a75252';ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,25,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#d28b8b';ctx.fillText('BASE',b.x,b.y);ctx.restore();
 }
 function drawDebugMarble(m,fill,alpha,outline=null,label=''){
   ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.strokeStyle=outline||'rgba(255,255,255,.45)';ctx.lineWidth=outline?4:2;ctx.beginPath();ctx.arc(m.pos.x,m.pos.y,DEFAULT_R,0,Math.PI*2);ctx.fill();ctx.stroke();
@@ -473,7 +473,7 @@ function renderSelected(){
   const st=selectedStage();
   if(!st||!st.eval||st.eval.error){$('stageBtn').disabled=!st;$('selectedLabel').textContent=st?st.name:'No stage loaded';$('selectedStats').innerHTML='';$('stateSlider').disabled=true;$('stateLabel').textContent='State —';$('targetWrap').innerHTML='<div class="empty">Select a valid stage to inspect d(k).</div>';ctx.clearRect(0,0,W,H);ctx.fillStyle='#070b10';ctx.fillRect(0,0,W,H);return}
   const e=st.eval;$('selectedLabel').textContent=`${st.name} · ${st.family} · rank ${e.rank??'—'}/${stages.filter(x=>x.eval&&!x.eval.error).length} · family ${e.familyRank??'—'}/${e.familySize??'—'} · ${flipLabel(st.verticalFlip)}`;
-  $('selectedStats').innerHTML=[['Difficulty',fmt(e.score)],['OUT mean',fmt(e.outMeanScore)],['Sustained area',fmt(e.sustainedAreaScore)],['Sustained max',fmt(e.sustainedMaxScore)],['Final 25%',fmt(e.final25)],['Max local',fmt(e.maxScore)]].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  $('selectedStats').innerHTML=[['Difficulty',fmt(e.score)],['BASE mean',fmt(e.outMeanScore)],['Sustained area',fmt(e.sustainedAreaScore)],['Sustained max',fmt(e.sustainedMaxScore)],['Final 25%',fmt(e.final25)],['Max local',fmt(e.maxScore)]].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
   $('stageBtn').disabled=false;
   const slider=$('stateSlider');slider.disabled=false;slider.min=1;slider.max=e.states.length;slider.value=clamp(+slider.value||1,1,e.states.length);renderStateDetails(st);renderPreview(st);
 }
@@ -519,7 +519,7 @@ function renderRanking(){
   const arr=sortedStages();
   if(!arr.length){$('rankingWrap').innerHTML='<div class="empty">No stages match the current filters.</div>';return}
   const arrow=k=>sortKey===k?(sortDir<0?' ▼':' ▲'):'';
-  let html='<table><thead><tr><th data-sort="rank">Rank'+arrow('rank')+'</th><th data-sort="familyRank">Fam#'+arrow('familyRank')+'</th><th data-sort="name">Stage'+arrow('name')+'</th><th data-sort="family">Family'+arrow('family')+'</th><th data-sort="flip">Flip'+arrow('flip')+'</th><th data-sort="score">Score'+arrow('score')+'</th><th data-sort="outmean">OUT mean'+arrow('outmean')+'</th><th data-sort="sustained">SustArea'+arrow('sustained')+'</th><th data-sort="sustainedMax">SustMax'+arrow('sustainedMax')+'</th><th data-sort="final25">Final25'+arrow('final25')+'</th><th data-sort="max">Max local'+arrow('max')+'</th><th data-sort="length">Length'+arrow('length')+'</th><th data-sort="batch">Batch'+arrow('batch')+'</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th data-sort="rank">Rank'+arrow('rank')+'</th><th data-sort="familyRank">Fam#'+arrow('familyRank')+'</th><th data-sort="name">Stage'+arrow('name')+'</th><th data-sort="family">Family'+arrow('family')+'</th><th data-sort="flip">Flip'+arrow('flip')+'</th><th data-sort="score">Score'+arrow('score')+'</th><th data-sort="outmean">BASE mean'+arrow('outmean')+'</th><th data-sort="sustained">SustArea'+arrow('sustained')+'</th><th data-sort="sustainedMax">SustMax'+arrow('sustainedMax')+'</th><th data-sort="final25">Final25'+arrow('final25')+'</th><th data-sort="max">Max local'+arrow('max')+'</th><th data-sort="length">Length'+arrow('length')+'</th><th data-sort="batch">Batch'+arrow('batch')+'</th></tr></thead><tbody>';
   arr.forEach(st=>{const e=st.eval||{},sel=st.id===selectedId?' selected':'';html+=`<tr class="selectable${sel}" data-id="${esc(st.id)}"><td>${e.rank??'—'}</td><td>${e.familyRank??'—'}</td><td title="${esc(st.fileName)}">${esc(st.name)}</td><td>${esc(st.family)}</td><td>${flipLabel(st.verticalFlip)}</td><td><strong>${e.error?'ERR':fmt(e.score)}</strong></td><td>${e.error?'—':fmt(e.outMeanScore)}</td><td>${e.error?'—':fmt(e.sustainedAreaScore)}</td><td>${e.error?'—':fmt(e.sustainedMaxScore)}</td><td>${e.error?'—':fmt(e.final25)}</td><td>${e.error?'—':fmt(e.maxScore)}</td><td>${fmt(st.track.length,0)}</td><td>${st.batchIndex??'—'}</td></tr>`});
   html+='</tbody></table>';$('rankingWrap').innerHTML=html;
   $('rankingWrap').querySelectorAll('tr[data-id]').forEach(tr=>tr.addEventListener('click',()=>{selectedId=tr.dataset.id;renderRanking();$('stateSlider').value=1;renderSelected()}));

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Marble Popper v0.40</title>
+<title>Marble Popper v0.42</title>
 <style>
   :root {
     color-scheme: dark;
@@ -451,7 +451,8 @@
   let effectTimers = {back:0, slow:0, shotFast:0, driveFast:0, shotSlow:0};
   let shellScreen='title', setupMode='stage-test', uiLanguage='en', toastTimer=0;
   let scoreState=null,scorePopups=[],displayScore=0,nextShotId=1,shotRecords=new Map();
-  let safetyOriginS=null,safetySequence=null,outPulse=0,resultShown=false,waveClearBonus=null,waveClearOriginS=null;
+  const BASE_PULSE_DURATION=.75,RESULT_DELAY_AFTER_BASE_PULSE=.3;
+  let safetyOriginS=null,safetySequence=null,baseResultTransition=null,outPulse=0,resultShown=false,waveClearBonus=null,waveClearOriginS=null;
   const SAVE_KEY='marble-popper-save-v1',SAVE_VERSION=1,SCORE_VERSION=2;
   const builtInCampaignRoot=window.MARBLE_POPPER_MAIN_CAMPAIGN||null;
   let mainCampaignRoot=builtInCampaignRoot;
@@ -874,7 +875,7 @@
     stepForTier:survivalStepSecondsForTier,
     setWaveClearOrigin:s=>{waveClearOriginS=s},
     beginWaveBonus:seconds=>beginWaveClearBonus(seconds),
-    forceGameOver:()=>{gameOver=true}
+    forceGameOver:()=>beginBaseResultTransition('gameOver')
   };
   window.__marblePopperWaveTest={
     setScenario:scenario=>{
@@ -883,7 +884,9 @@
       const ids=segments.flatMap(seg=>seg.marbles.map(m=>m.id));nextMarbleId=Math.max(1,...ids)+1;
       waveState={phase:scenario.phase||'deploying',waveIndex:scenario.waveIndex||1,totalWaves:Infinity,remaining:scenario.remaining||0,timer:scenario.timer||0,connected:!!scenario.connected,rumbleStarted:!!scenario.rumbleStarted,preExistingIds:new Set(scenario.preExistingIds||[])};
     },
-    snapshot:()=>({wave:{phase:waveState.phase,waveIndex:waveState.waveIndex,remaining:waveState.remaining,connected:waveState.connected,rumbleStarted:waveState.rumbleStarted},segments:segments.map(seg=>({driven:seg.driven,attracting:seg.attracting,marbles:seg.marbles.map(m=>({id:m.id,s:m.s,waveId:m.waveId}))})),spawnQueue:[...spawnQueue],shotBlocked:shotTemporarilyBlocked(),effectTimers:{...effectTimers},outPulse}),
+    snapshot:()=>({wave:{phase:waveState.phase,waveIndex:waveState.waveIndex,remaining:waveState.remaining,connected:waveState.connected,rumbleStarted:waveState.rumbleStarted},segments:segments.map(seg=>({driven:seg.driven,attracting:seg.attracting,marbles:seg.marbles.map(m=>({id:m.id,s:m.s,waveId:m.waveId}))})),spawnQueue:[...spawnQueue],shotBlocked:shotTemporarilyBlocked(),effectTimers:{...effectTimers},outPulse,resultTransition:baseResultTransition?{...baseResultTransition}:null,gameOver,cleared}),
+    beginBaseResult:beginBaseResultTransition,
+    advance:update,
     repair:()=>repairDriveInvariant(true),
     syncRumble:updateWaveRumbleSync,
     stepState:updateWaveState,
@@ -1706,7 +1709,7 @@
     matchBursts=[]; smokeEffects=[]; specialNotices=[]; shooterRecoil=0; shooterRecoilV=0;
     nextMarbleId=1;
     effectTimers={back:0, slow:0, shotFast:0, driveFast:0, shotSlow:0};
-    scoreState=newScoreState();scorePopups=[];displayScore=0;nextShotId=1;shotRecords=new Map();safetyOriginS=null;safetySequence=null;outPulse=0;resultShown=false;waveClearBonus=null;waveClearOriginS=null;
+    scoreState=newScoreState();scorePopups=[];displayScore=0;nextShotId=1;shotRecords=new Map();safetyOriginS=null;safetySequence=null;baseResultTransition=null;outPulse=0;resultShown=false;waveClearBonus=null;waveClearOriginS=null;
     campaignResultLevelIndex=-1;campaignResultNextIndex=-1;campaignResultWasHighScore=false;survivalResultWasRecord=false;
     if(stageWaveProfile.enabled)beginNextWave();else spawnFirst();
     lastTime=performance.now();
@@ -2461,7 +2464,7 @@
     swaps++;
     flashText='SWAP'; flashTimer=.25;
   }
-  function shotTemporarilyBlocked(){return clearPending||!!safetySequence}
+  function shotTemporarilyBlocked(){return clearPending||!!safetySequence||!!baseResultTransition}
 
   function fire(x=shooterX, targetX=x, targetY=0, touchMode=false) {
     if (paused || gameOver || cleared || shotTemporarilyBlocked() || fireCooldown>0) return;
@@ -2699,6 +2702,20 @@
     safetySequence={nextS:first,timer:.03,done:false,finishTimer:0};
     clearPending=true;projectiles=[];
   }
+  function beginBaseResultTransition(kind){
+    if(baseResultTransition||gameOver||cleared)return;
+    stopWaveRumble();projectiles=[];clearPending=true;
+    outPulse=BASE_PULSE_DURATION;sfxBomb();
+    baseResultTransition={kind,timer:BASE_PULSE_DURATION+RESULT_DELAY_AFTER_BASE_PULSE};
+  }
+  function updateBaseResultTransition(dt){
+    const q=baseResultTransition;if(!q)return;
+    q.timer-=dt;
+    if(q.timer>0)return;
+    baseResultTransition=null;clearPending=false;displayScore=scoreValue();flashTimer=999;
+    if(q.kind==='gameOver'){gameOver=true;flashText='GAME OVER'}
+    else{cleared=true;flashText='STAGE CLEAR'}
+  }
   function forceStageClear(){
     if(activeGameMode==='survival')return;
     if(shellScreen!=='playing'||paused||gameOver||cleared||clearPending)return;
@@ -2715,15 +2732,14 @@
       const p=trackPos(q.nextS);addScore('safetyBonus',SCORE_RULES.safetyUnit,{x:p.x,y:p.y,label:String(SCORE_RULES.safetyUnit),tone:'safety',small:true});sfxSafetyTick(emitted*.01375);emitted++;q.nextS+=BALL_SPACING;q.timer+=.01375;
     }
     if(q.nextS>=track.length-1){
-      if(!q.finishTimer){outPulse=.75;q.finishTimer=.7;sfxBomb();const p=trackPos(track.length);scorePopups.push({x:p.x,y:p.y,text:'SAFETY BONUS',age:0,duration:1.0,tone:'safety',small:false})}
-      q.finishTimer-=dt;
-      if(q.finishTimer<=0){q.done=true;cleared=true;clearPending=false;flashText='STAGE CLEAR';flashTimer=999;displayScore=scoreValue()}
+      q.done=true;const p=trackPos(track.length);scorePopups.push({x:p.x,y:p.y,text:'SAFETY BONUS',age:0,duration:1.0,tone:'safety',small:false});beginBaseResultTransition('cleared');
     }
   }
 
   // ---------- Update ----------
   function update(dt) {
     if (paused || gameOver || cleared) return;
+    if(baseResultTransition){updateBaseResultTransition(dt);updateVisualPhysics(dt);return}
     if(safetySequence){updateSafetySequence(dt);updateVisualPhysics(dt);return}
     updateSurvivalDifficulty(dt);
     fireCooldown=Math.max(0,fireCooldown-dt);
@@ -2784,13 +2800,12 @@
 
     for (const seg of segments) {
       if (seg.marbles.some(m=>m.s>=track.length-4)) {
-        gameOver=true;
-        flashText='GAME OVER'; flashTimer=999;
+        beginBaseResultTransition('gameOver');
         break;
       }
     }
 
-    if (activeGameMode!=='survival'&&!gameOver && spawnQueue.length===0 && segments.length===0) {
+    if (activeGameMode!=='survival'&&!gameOver&&!baseResultTransition && spawnQueue.length===0 && segments.length===0) {
       // The logical board may be empty while the last marbles are still visibly
       // shrinking/bursting. Enter a short pending state first: stop accepting
       // new shots, discard irrelevant in-flight shots, and let visual effects
@@ -2799,7 +2814,7 @@
       if (matchBursts.length===0 && smokeEffects.length===0) {
         beginSafetySequence();
       }
-    } else if (!cleared) {
+    } else if (!cleared&&!baseResultTransition) {
       clearPending=false;
     }
   }
@@ -2830,11 +2845,11 @@
     ctx.save();
     ctx.fillStyle='#080b10'; ctx.strokeStyle='#56677d'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(start.x,start.y,22,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#a8b4c5'; ctx.font='12px system-ui'; ctx.textAlign='center';
-    ctx.fillText('IN',start.x,start.y+4);
+    ctx.fillStyle='#a8b4c5'; ctx.font='800 9px system-ui'; ctx.textAlign='center';
+    ctx.fillText('SPAWN',start.x,start.y+3);
     ctx.fillStyle='#030507'; ctx.strokeStyle='#9a4b4b'; ctx.lineWidth=4;
     ctx.beginPath(); ctx.arc(end.x,end.y,25,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#c88'; ctx.fillText('OUT',end.x,end.y+4);
+    ctx.fillStyle='#c88'; ctx.fillText('BASE',end.x,end.y+3);
     ctx.restore();
   }
 
@@ -3104,7 +3119,7 @@
     ctx.restore();
   }
   function drawOutPulse(){
-    if(outPulse<=0)return;const p=trackPos(track.length),t=1-outPulse/.75;ctx.save();ctx.globalAlpha=Math.max(0,1-t);ctx.strokeStyle='#ffd15a';ctx.lineWidth=5-2*t;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(p.x,p.y,28+t*(45+i*18)+i*7,0,Math.PI*2);ctx.stroke()}ctx.fillStyle=`rgba(255,170,55,${.35*(1-t)})`;ctx.beginPath();ctx.arc(p.x,p.y,24+36*t,0,Math.PI*2);ctx.fill();ctx.restore();
+    if(outPulse<=0)return;const p=trackPos(track.length),t=1-outPulse/BASE_PULSE_DURATION;ctx.save();ctx.globalAlpha=Math.max(0,1-t);ctx.strokeStyle='#ffd15a';ctx.lineWidth=5-2*t;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(p.x,p.y,28+t*(45+i*18)+i*7,0,Math.PI*2);ctx.stroke()}ctx.fillStyle=`rgba(255,170,55,${.35*(1-t)})`;ctx.beginPath();ctx.arc(p.x,p.y,24+36*t,0,Math.PI*2);ctx.fill();ctx.restore();
   }
 
   function drawCanvasHud(){

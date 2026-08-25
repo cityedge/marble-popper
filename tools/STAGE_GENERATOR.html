@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Marble Stage Generator Lab v0.18</title>
+<title>Marble Stage Generator Lab v0.19</title>
 <style>
 :root{color-scheme:dark;--bg:#090d12;--panel:#111923;--panel2:#182331;--line:#2b394b;--text:#e9eff7;--muted:#93a3b7}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,"Noto Sans JP",sans-serif}body{padding:14px}.app{width:min(1520px,100%);margin:auto}.top{display:flex;gap:14px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}h1{font-size:20px;margin:0 0 4px}.sub{font-size:12px;color:var(--muted)}.controls,.lower{display:flex;gap:8px;align-items:end;flex-wrap:wrap}label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px}button,input,select{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:0 9px;font:inherit}button{cursor:pointer}button:hover{background:var(--panel2)}input[type=number]{width:110px}input[type=range]{width:170px;padding:0}.stage{width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1118;box-shadow:0 16px 45px #0005}.stage canvas{width:100%;height:100%;display:block}.lower{margin-top:10px}.progress{flex:1;min-width:280px}.progress input{width:100%}.phaseBtns{display:flex;gap:4px}.phaseBtns button.active{background:#29394c;border-color:#6a829e}.bottom{display:grid;grid-template-columns:1fr minmax(330px,500px);gap:10px;margin-top:10px}.stats,.help{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.6}.help{color:var(--muted)}.row{display:flex;gap:14px;flex-wrap:wrap}.batchbar{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:0 0 10px;padding:9px 10px;background:var(--panel);border:1px solid var(--line);border-radius:10px}.batchbar .status{font-size:12px;color:var(--muted);min-width:260px;flex:1}.batchbar button:disabled{opacity:.45;cursor:not-allowed}.k{color:var(--muted)}.ok{color:#8ce4ae}.warn{color:#ffd879}.bad{color:#ff8c98}@media(max-width:950px){.bottom{grid-template-columns:1fr}}
@@ -11,7 +11,7 @@
 <body>
 <div class="app">
 <div class="top">
-  <div><h1>MARBLE STAGE GENERATOR LAB v0.18</h1><div class="sub">Length-budgeted wide-area routes · family-cycle batch generation · 50% vertical mirror · StageSpec v2 export</div></div>
+  <div><h1>MARBLE STAGE GENERATOR LAB v0.19</h1><div class="sub">Length-budgeted wide-area routes · family-cycle batch generation · 50% vertical mirror · StageSpec v2 export</div></div>
   <div class="controls">
     <label>Seed<input id="seed" type="number" min="1" value="1001"></label>
     <label>Base shape<select id="baseShape">
@@ -39,13 +39,13 @@
   <label>Obstacles<select id="obstacles"><option value="0">0</option><option value="2">2</option><option value="4">4</option></select></label>
   <label>Debug<select id="debug"><option value="off">Clean</option><option value="on">Show coverage / geometry</option></select></label>
 </div>
-<div class="bottom"><div id="stats" class="stats"></div><div class="help"><b>Target length</b> controls the generated IN-to-OUT distance. <b>Length tolerance</b> defines the acceptable band around it. <b>Minimum screen reach</b> independently asks the route to span that percentage of both the usable width and height, so a shorter route can still travel widely across the board. The generator searches toward both goals and reports when either target is missed. Simplify remains a separate finishing pass and can shorten the exported final route below the generation target; use a low value when calibrating length. Crossing topology, clearance, edge bounds, and the family-specific base remain protected. Export StageSpec records the requested constraints and achieved measurements. Batch Generation cycles all ten families, retries invalid stages, applies an independent 50% vertical mirror, and uses the current controls for every stage.</div></div>
+<div class="bottom"><div id="stats" class="stats"></div><div class="help"><b>Target length</b> controls the generated SPAWN-to-BASE distance. <b>Length tolerance</b> defines the acceptable band around it. <b>Minimum screen reach</b> independently asks the route to span that percentage of both the usable width and height, so a shorter route can still travel widely across the board. The generator searches toward both goals and reports when either target is missed. Simplify remains a separate finishing pass and can shorten the exported final route below the generation target; use a low value when calibrating length. Crossing topology, clearance, edge bounds, and the family-specific base remain protected. Export StageSpec records the requested constraints and achieved measurements. Batch Generation cycles all ten families, retries invalid stages, applies an independent 50% vertical mirror, and uses the current controls for every stage.</div></div>
 </div>
 <script>
 (()=>{'use strict';
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
 const W=1280,H=720,BALL_R=20,BALL_SPACING=40.5,SAMPLE_BALLS=64;
-const GENERATOR_VERSION='0.18';
+const GENERATOR_VERSION='0.19';
 // Match the game renderer's real geometry instead of reserving a second,
 // invisible padding band.  The 58 px track needs 29 px at canvas edges; at
 // the bottom it may approach the loaded shooter marble without overlapping it.
@@ -257,7 +257,7 @@ function hasLargeEmptyPocket(p){const z=freeRegions(p);return !!(z.length&&z[0].
 function wholePathRescueCandidates(cur,target,r,minNetGrid=4,maxTrials=30){
   // Last-resort topology reset for zero-crossing bases that cannot make even
   // one normal surgery. The old base interior is NOT treated as a wall here:
-  // only IN and OUT are kept as anchors, and a long self-avoiding maze route
+  // only SPAWN and BASE are kept as anchors, and a long self-avoiding maze route
   // is rebuilt across the board. This is what actually solves rectangular
   // spirals / nested U layouts with sealed interior pockets.
   if(target!==0||cur.length<2)return[];
@@ -271,7 +271,7 @@ function wholePathRescueCandidates(cur,target,r,minNetGrid=4,maxTrials=30){
     const st=starts[Math.floor(r()*starts.length)],en=ends[Math.floor(r()*ends.length)];
     if(st===en)continue;
 
-    // Aim for a board-scale path. longMazeRouteCfg keeps a valid route to OUT
+    // Aim for a board-scale path. longMazeRouteCfg keeps a valid route to BASE
     // while greedily consuming unused cells, so the resulting path may finish
     // earlier than desired but remains a single self-avoiding route.
     const desired=Math.floor(rand(r,70,126));
@@ -843,7 +843,7 @@ function phaseTrack(){const p=phasePoints();return p.length?buildTrack(phase==='
 // ----- Drawing -----
 function bg(){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#111a25');g.addColorStop(1,'#081018');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.save();ctx.strokeStyle='#ffffff06';for(let x=0;x<W;x+=64){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=64){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.restore();ctx.fillStyle='#8046461f';ctx.fillRect(0,SAFE_TRACK_BOTTOM,W,H-SAFE_TRACK_BOTTOM);ctx.strokeStyle='#ff919147';ctx.beginPath();ctx.moveTo(0,SAFE_TRACK_BOTTOM);ctx.lineTo(W,SAFE_TRACK_BOTTOM);ctx.stroke()}
 function trackDraw(t){ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(t.pts[0].x,t.pts[0].y);for(let i=1;i<t.pts.length;i++)ctx.lineTo(t.pts[i].x,t.pts[i].y);ctx.strokeStyle='#04070a';ctx.lineWidth=15;ctx.stroke();ctx.strokeStyle='#4b596b';ctx.lineWidth=9;ctx.stroke();ctx.strokeStyle='#1b2633';ctx.lineWidth=5;ctx.stroke();ctx.restore()}
-function endpoints(t){const a=trackPos(t,0),b=trackPos(t,t.length);ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 11px system-ui';ctx.fillStyle='#07100b';ctx.strokeStyle='#65b98a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(a.x,a.y,18,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#9ae3b8';ctx.fillText('IN',a.x,a.y);ctx.fillStyle='#100708';ctx.strokeStyle='#c65e68';ctx.beginPath();ctx.arc(b.x,b.y,20,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ef9aa2';ctx.fillText('OUT',b.x,b.y);ctx.restore()}
+function endpoints(t){const a=trackPos(t,0),b=trackPos(t,t.length);ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 8px system-ui';ctx.fillStyle='#07100b';ctx.strokeStyle='#65b98a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(a.x,a.y,18,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#9ae3b8';ctx.fillText('SPAWN',a.x,a.y);ctx.fillStyle='#100708';ctx.strokeStyle='#c65e68';ctx.beginPath();ctx.arc(b.x,b.y,20,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#ef9aa2';ctx.fillText('BASE',b.x,b.y);ctx.restore()}
 function ball(x,y,c,r=BALL_R,a=1){const z=COLORS[c];ctx.save();ctx.globalAlpha=a;const g=ctx.createRadialGradient(x-r*.34,y-r*.38,r*.08,x+r*.07,y+r*.08,r*1.02);g.addColorStop(0,z[2]);g.addColorStop(.22,z[0]);g.addColorStop(.72,z[0]);g.addColorStop(1,z[1]);ctx.shadowColor='#0009';ctx.shadowBlur=5;ctx.shadowOffsetY=3;ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.shadowColor='transparent';ctx.strokeStyle='#ffffff42';ctx.lineWidth=1.7;ctx.stroke();ctx.restore()}
 function ballSs(t){const lead=t.length*(+$('progress').value/100),a=[];for(let i=0;i<SAMPLE_BALLS;i++){const s=lead-i*BALL_SPACING;if(s<0)break;a.push(s)}return a}
 function crossRank(c,i){return crossingOrderInfo(c).rankByIndex.get(i)??i}
