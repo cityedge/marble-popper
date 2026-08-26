@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Marble Popper v0.42</title>
+<title>Marble Popper v0.46</title>
 <style>
   :root {
     color-scheme: dark;
@@ -77,9 +77,33 @@
   .modal-screen { display:grid; place-items:center; background:rgba(2,7,12,.5); backdrop-filter:blur(5px); }
   .modal { min-width:min(420px,84%); max-height:92%; overflow:auto; padding:36px; text-align:center; border:1px solid #405873; border-radius:24px; background:rgba(5,13,21,.96); box-shadow:0 24px 70px rgba(0,0,0,.55); }
   .modal h2 { margin:0 0 20px; font-size:34px; }
+  .pause-modal { width:min(940px,94%); padding:28px 30px; overflow:hidden; text-align:left; }
+  .pause-modal h2 { margin-bottom:14px; text-align:center; }
+  .pause-guide { display:grid; grid-template-columns:1.05fr 1.35fr 1.05fr; gap:18px; margin-bottom:16px; }
+  .pause-guide section { min-width:0; }
+  .pause-guide h3 { margin:0 0 7px; color:var(--gold); font-size:13px; letter-spacing:.08em; }
+  .pause-guide-note { min-height:2.7em; margin:0 0 8px; color:#b8c8d8; font-size:11px; line-height:1.35; }
+  .pause-control-list,.pause-special-list { display:grid; gap:6px; }
+  .pause-control-item,.pause-special-item { display:grid; align-items:center; min-height:38px; padding:6px 8px; border:1px solid rgba(73,100,127,.46); border-radius:9px; background:rgba(12,24,35,.78); }
+  .pause-control-item { grid-template-columns:4.8em 1fr; gap:8px; }
+  .pause-control-item kbd { display:grid; place-items:center; min-height:25px; padding:3px 6px; border:1px solid #607a94; border-radius:6px; color:#f4f8fc; background:#172838; box-shadow:inset 0 -2px rgba(0,0,0,.28); font:800 10px/1.1 system-ui; text-align:center; }
+  .pause-control-item span { color:#d8e3ed; font-size:11px; line-height:1.3; }
+  .pause-special-item { grid-template-columns:36px 1fr; gap:8px; }
+  .pause-special-icon { display:grid; place-items:center; width:32px; height:32px; border:2px solid #ffe17a; border-radius:50%; color:#fff0a6; background:rgba(5,8,12,.9); }
+  .pause-special-icon svg { width:24px; height:24px; overflow:visible; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .pause-special-icon svg .solid { fill:currentColor; stroke:none; }
+  .pause-special-item.down .pause-special-icon { border-color:#ff6f8d; color:#ff9bb0; }
+  .pause-special-copy { min-width:0; line-height:1.2; }
+  .pause-special-copy strong { display:block; overflow:hidden; color:#f2f6fa; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+  .pause-special-copy small { display:block; color:#9fb2c4; font-size:10px; line-height:1.25; }
+  .pause-modal .modal-actions { grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); }
   .result-breakdown { margin:18px 0 22px; text-align:left; }
   .result-row { display:grid; grid-template-columns:1fr auto; gap:20px; padding:6px 0; color:var(--muted); border-bottom:1px solid rgba(75,101,126,.22); }
   .result-row strong { color:var(--text); font-variant-numeric:tabular-nums; }
+  .result-row.score-help { position:relative; border-radius:5px; cursor:help; outline:none; }
+  .result-row.score-help:hover,.result-row.score-help:focus-visible { color:#dce8f2; background:rgba(53,79,103,.18); }
+  .result-row.score-help::after { content:attr(data-tooltip); position:absolute; z-index:8; top:calc(100% + 4px); left:0; width:min(420px,calc(100vw - 96px)); padding:8px 10px; border:1px solid #607d99; border-radius:8px; color:#e9f1f8; background:rgba(5,13,21,.98); box-shadow:0 8px 24px rgba(0,0,0,.55); font-size:11px; font-weight:500; line-height:1.45; white-space:normal; opacity:0; visibility:hidden; transform:translateY(-3px); transition:opacity .12s ease,transform .12s ease,visibility .12s; pointer-events:none; }
+  .result-row.score-help:hover::after,.result-row.score-help:focus::after { opacity:1; visibility:visible; transform:translateY(0); }
   .result-row.total { margin-top:8px; padding-top:11px; color:var(--text); font-size:18px; border-top:1px solid #647f9b; border-bottom:0; }
   .result-record { color:var(--muted); font-size:12px; line-height:1.65; }
   .modal-actions { display:grid; gap:10px; }
@@ -102,8 +126,8 @@
   .high-score-row strong { min-width:7em; text-align:right; font-variant-numeric:tabular-nums; }
   .score-section-title { margin:28px 0 4px; color:var(--gold); font-size:15px; letter-spacing:.08em; }
   .survival-record { margin-top:14px; padding:12px 14px; border:1px solid rgba(64,88,115,.4); border-radius:10px; color:var(--muted); background:rgba(5,13,21,.58); line-height:1.55; }
-  @media(max-width:760px){ .title-panel{left:3%;top:4%;bottom:4%;width:48%;min-width:0;padding:5% 4%;border-radius:28px 50px 36px 28px}.game-title{font-size:6.5vw}.menu-btn{height:9vh;font-size:clamp(13px,2.7vw,20px)}.setup-panel{left:5%;top:7%;bottom:7%;width:65%;padding:4.5%}.utility{top:2%;right:2%}.utility button{height:34px;min-height:34px}.modal{padding:24px} }
-  @media(max-height:500px){ .title-panel{top:3%;bottom:3%;padding:3.2% 4% 2%}.game-title{font-size:38px;margin-bottom:2%}.title-marbles{display:none}.title-difficulty{margin:0 2% 1%;gap:8px}.title-difficulty select{min-height:30px}.menu{gap:0}.menu-btn{height:38px;font-size:18px}.setup-panel{top:4%;bottom:4%;padding:3.5% 4%}.setup-panel h2{font-size:30px}.setup-panel p{margin-bottom:12px}.field{margin-top:9px}.setup-actions{margin:9px 0}.utility{top:2%}.utility button{height:34px;min-height:34px}.modal{max-height:94%;padding:14px 22px}.modal h2{margin-bottom:7px;font-size:25px}.result-breakdown{margin:6px 0 8px}.result-row{padding:2px 0}.result-row.total{margin-top:3px;padding-top:5px}.result-record{line-height:1.35}.modal-actions{grid-template-columns:repeat(3,1fr);gap:7px}.modal-actions button{min-height:32px} }
+  @media(max-width:760px){ .title-panel{left:3%;top:4%;bottom:4%;width:48%;min-width:0;padding:5% 4%;border-radius:28px 50px 36px 28px}.game-title{font-size:6.5vw}.menu-btn{height:9vh;font-size:clamp(13px,2.7vw,20px)}.setup-panel{left:5%;top:7%;bottom:7%;width:65%;padding:4.5%}.utility{top:2%;right:2%}.utility button{height:34px;min-height:34px}.modal{padding:24px}.pause-modal{overflow:auto}.pause-guide{grid-template-columns:1fr}.pause-modal .modal-actions{grid-template-columns:1fr 1fr} }
+  @media(max-height:500px){ .title-panel{top:3%;bottom:3%;padding:3.2% 4% 2%}.game-title{font-size:38px;margin-bottom:2%}.title-marbles{display:none}.title-difficulty{margin:0 2% 1%;gap:8px}.title-difficulty select{min-height:30px}.menu{gap:0}.menu-btn{height:38px;font-size:18px}.setup-panel{top:4%;bottom:4%;padding:3.5% 4%}.setup-panel h2{font-size:30px}.setup-panel p{margin-bottom:12px}.field{margin-top:9px}.setup-actions{margin:9px 0}.utility{top:2%}.utility button{height:34px;min-height:34px}.modal{max-height:94%;padding:14px 22px}.modal h2{margin-bottom:7px;font-size:25px}.pause-modal{width:min(810px,96%);max-height:96%;padding:10px 14px}.pause-modal h2{margin-bottom:5px;font-size:22px}.pause-guide{gap:10px;margin-bottom:7px}.pause-guide h3{margin-bottom:3px;font-size:11px}.pause-guide-note{min-height:0;margin-bottom:4px;font-size:9px;line-height:1.2}.pause-control-list,.pause-special-list{gap:3px}.pause-control-item,.pause-special-item{min-height:28px;padding:3px 5px;border-radius:6px}.pause-control-item{grid-template-columns:4.4em 1fr;gap:5px}.pause-control-item kbd{min-height:20px;padding:2px 4px;font-size:8px}.pause-control-item span{font-size:9px;line-height:1.15}.pause-special-item{grid-template-columns:25px 1fr;gap:5px}.pause-special-icon{width:23px;height:23px}.pause-special-icon svg{width:17px;height:17px}.pause-special-copy strong{font-size:9px}.pause-special-copy small{font-size:8px;line-height:1.1}.result-breakdown{margin:6px 0 8px}.result-row{padding:2px 0}.result-row.total{margin-top:3px;padding-top:5px}.result-record{line-height:1.35}.modal-actions{grid-template-columns:repeat(3,1fr);gap:7px}.modal-actions button{min-height:32px}.pause-modal .modal-actions{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}.pause-modal .modal-actions button{min-height:28px;padding:4px 5px;font-size:10px} }
   @media(prefers-reduced-motion:reduce){ *{transition-duration:.01ms!important} }
 </style>
 </head>
@@ -217,12 +241,45 @@
     </section>
 
     <section class="shell-screen modal-screen" id="pauseScreen" aria-label="Paused">
-      <div class="modal"><h2 data-i18n="paused">PAUSED</h2><div class="modal-actions">
-        <button id="resumeBtn" data-i18n="resume">RESUME</button>
-        <button id="restartBtn" data-i18n="restart">RESTART</button>
-        <button id="stageSelectBtn" data-i18n="stageSelect">STAGE SELECT</button>
-        <button id="titleBtn" data-i18n="title">TITLE</button>
-      </div></div>
+      <div class="modal pause-modal"><h2 data-i18n="paused">PAUSED</h2>
+        <div class="pause-guide">
+          <section aria-labelledby="pauseControlsHeading">
+            <h3 id="pauseControlsHeading" data-i18n="pauseControls">CONTROLS</h3>
+            <p class="pause-guide-note" data-i18n="pauseControlsNote">Mouse and touch controls are both supported.</p>
+            <div class="pause-control-list">
+              <div class="pause-control-item"><kbd data-i18n="pauseMouse">MOUSE</kbd><span data-i18n="pauseMouseHelp">Move to aim · Left click to fire</span></div>
+              <div class="pause-control-item"><kbd data-i18n="pauseSwapKey">RIGHT CLICK</kbd><span data-i18n="pauseSwapHelp">Swap CURRENT and NEXT</span></div>
+              <div class="pause-control-item"><kbd data-i18n="pauseTouch">TOUCH</kbd><span data-i18n="pauseTouchHelp">Tap a target to fire · Tap the launcher to swap</span></div>
+              <div class="pause-control-item"><kbd>SPACE / ESC</kbd><span data-i18n="pausePauseHelp">Pause or resume</span></div>
+            </div>
+          </section>
+          <section aria-labelledby="pausePowerUpHeading">
+            <h3 id="pausePowerUpHeading" data-i18n="pausePowerUps">POWER UPS</h3>
+            <p class="pause-guide-note" data-i18n="pauseSpecialRule">Activate a marked marble by removing it in a color match.</p>
+            <div class="pause-special-list">
+              <div class="pause-special-item up" data-special="bomb"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="solid" cx="10" cy="14" r="5"/><path d="M13.5 10c1.5-3.5 4-5.5 7-4"/></svg></span><span class="pause-special-copy"><strong>BOMB</strong><small data-i18n="pauseBombHelp">Clears nearby marbles</small></span></div>
+              <div class="pause-special-item up" data-special="colorWipe"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 20 16-16"/><circle class="solid" cx="7" cy="17" r="2.6"/><circle class="solid" cx="12" cy="12" r="2.6"/><circle class="solid" cx="17" cy="7" r="2.6"/></svg></span><span class="pause-special-copy"><strong>WIPE</strong><small data-i18n="pauseWipeHelp">Clears that color from the lane</small></span></div>
+              <div class="pause-special-item up" data-special="back"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 8H3v-4M4 8a9 9 0 1 1-1 8"/></svg></span><span class="pause-special-copy"><strong>BACK</strong><small data-i18n="pauseBackHelp">Moves the chain toward SPAWN</small></span></div>
+              <div class="pause-special-item up" data-special="slow"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10M7 20h10M8 4c0 4 3 5 4 8-1 3-4 4-4 8M16 4c0 4-3 5-4 8 1 3 4 4 4 8"/></svg></span><span class="pause-special-copy"><strong>SLOW</strong><small data-i18n="pauseSlowHelp">Slows chain movement</small></span></div>
+              <div class="pause-special-item up" data-special="shotFast"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 20V4M5 11l7-7 7 7"/></svg></span><span class="pause-special-copy"><strong>SHOT FAST</strong><small data-i18n="pauseShotFastHelp">Speeds up fired marbles</small></span></div>
+            </div>
+          </section>
+          <section aria-labelledby="pausePowerDownHeading">
+            <h3 id="pausePowerDownHeading" data-i18n="pausePowerDowns">POWER DOWNS</h3>
+            <p class="pause-guide-note" data-i18n="pausePowerDownNote">Pink marks are harmful effects.</p>
+            <div class="pause-special-list">
+              <div class="pause-special-item down" data-special="driveFast"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="10" cy="12" r="2"/><path d="M12 12h8M16 8l4 4-4 4"/></svg></span><span class="pause-special-copy"><strong>DRIVE FAST</strong><small data-i18n="pauseDriveFastHelp">Speeds up chain movement</small></span></div>
+              <div class="pause-special-item down" data-special="shotSlow"><span class="pause-special-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4v16M5 13l7 7 7-7"/></svg></span><span class="pause-special-copy"><strong>SHOT SLOW</strong><small data-i18n="pauseShotSlowHelp">Slows fired marbles</small></span></div>
+            </div>
+          </section>
+        </div>
+        <div class="modal-actions">
+          <button id="resumeBtn" data-i18n="resume">RESUME</button>
+          <button id="restartBtn" data-i18n="restart">RESTART</button>
+          <button id="stageSelectBtn" data-i18n="stageSelect">STAGE SELECT</button>
+          <button id="titleBtn" data-i18n="title">TITLE</button>
+        </div>
+      </div>
     </section>
 
     <section class="shell-screen modal-screen" id="resultScreen" aria-label="Stage result">
@@ -293,7 +350,12 @@
   const TRACK_OUTER_WIDTH = 58;
   const TRACK_MID_WIDTH = 51;
   const TRACK_INNER_WIDTH = 43;
-  const CROSSING_OCCLUSION_HALF_LENGTH = BALL_SPACING * 1.65;
+  // A lower-pass marble becomes untargetable after 20% of its diameter has
+  // entered beneath the upper lane, and becomes targetable again after 20%
+  // has emerged.  This keeps the bridge readable without turning crossings
+  // into an unnecessarily large no-shot zone.
+  const CROSSING_ENTRY_FRACTION = .20;
+  const CROSSING_MIN_SIN_ANGLE = .25;
   // The visual overpass is composited only in a small neighborhood around the
   // actual crossing.  The upper lane itself is drawn well beyond this region,
   // but a circular clip hides the stroke ends completely, so no separate
@@ -361,13 +423,13 @@
   const POWERUP_POOL = ['bomb','bomb','back','slow','shotFast','colorWipe'];
   const POWERDOWN_POOL = ['driveFast','shotSlow'];
   const SPECIAL_META = {
-    bomb:      {label:'BOMB',       icon:'✹',  polarity:'up'},
-    colorWipe: {label:'WIPE',       icon:'W',  polarity:'up'},
-    back:      {label:'BACK',       icon:'↶',  polarity:'up'},
-    slow:      {label:'SLOW',       icon:'S',  polarity:'up'},
-    shotFast:  {label:'SHOT FAST',  icon:'F+', polarity:'up'},
-    driveFast: {label:'DRIVE FAST', icon:'D+', polarity:'down'},
-    shotSlow:  {label:'SHOT SLOW',  icon:'F−', polarity:'down'}
+    bomb:      {label:'BOMB',       polarity:'up'},
+    colorWipe: {label:'WIPE',       polarity:'up'},
+    back:      {label:'BACK',       polarity:'up'},
+    slow:      {label:'SLOW',       polarity:'up'},
+    shotFast:  {label:'SHOT FAST',  polarity:'up'},
+    driveFast: {label:'DRIVE FAST', polarity:'down'},
+    shotSlow:  {label:'SHOT SLOW',  polarity:'down'}
   };
 
   const DEFAULT_TOTAL_BALLS = 240;
@@ -449,7 +511,7 @@
   let shooterRecoilV = 0;
   let nextMarbleId = 1;
   let effectTimers = {back:0, slow:0, shotFast:0, driveFast:0, shotSlow:0};
-  let shellScreen='title', setupMode='stage-test', uiLanguage='en', toastTimer=0;
+  let shellScreen='title', setupMode='stage-test', uiLanguage='ja', toastTimer=0;
   let scoreState=null,scorePopups=[],displayScore=0,nextShotId=1,shotRecords=new Map();
   const BASE_PULSE_DURATION=.75,RESULT_DELAY_AFTER_BASE_PULSE=.3;
   let safetyOriginS=null,safetySequence=null,baseResultTransition=null,outPulse=0,resultShown=false,waveClearBonus=null,waveClearOriginS=null;
@@ -466,8 +528,8 @@
   let activeCampaignDifficulty=normalizeCampaignDifficulty(saveData.selectedCampaignDifficulty);
 
   const UI_TEXT={
-    en:{campaign:'CAMPAIGN',difficulty:'DIFFICULTY',newGame:'NEW GAME',continueGame:'CONTINUE',highScores:'HIGH SCORES',campaignHighScores:'Campaign stage records by difficulty. Scores are recorded after a stage clear.',survival:'SURVIVAL',survivalHighScores:'Longest survival time by stage. Score breaks a time tie.',survivalDescription:'Choose a stage cleared in the NORMAL campaign. Pressure rises every 15–24 seconds by tier; items 9 and 18 add a color when possible.',survivalNoRecord:'NO RECORD',survivalTime:'SURVIVAL TIME',survivalBest:'BEST',stageTest:'STAGE TEST',settings:'SETTINGS',loadData:'LOAD DATA',builtIn:'BUILT-IN CAMPAIGN',useAsMainCampaign:'USE AS MAIN CAMPAIGN',restoreBuiltInCampaign:'RESTORE BUILT-IN CAMPAIGN',saveData:'SAVE DATA',saveDataHelp:'Export or merge campaign progress, high scores, and Survival records. Audio settings are not included.',exportSaveData:'EXPORT SAVE',importSaveData:'IMPORT SAVE',mergeSaveConfirm:'Merge this save with current records? Higher progress and records will be kept.',saveExported:'Save data exported',saveImported:'Save data imported',play:'PLAY',back:'← BACK',language:'LANGUAGE',sound:'AUDIO',masterVolume:'MASTER VOLUME',bgmVolume:'BGM VOLUME',sfxVolume:'SE VOLUME',paused:'PAUSED',resume:'RESUME',restart:'RESTART',stageSelect:'STAGE SELECT',title:'TITLE',replay:'PLAY AGAIN',retry:'RETRY',nextStage:'NEXT STAGE',newHighScore:'NEW HIGH SCORE',campaignComplete:'CAMPAIGN COMPLETE',stage:'STAGE',score:'SCORE',campaignDescription:'Play the active campaign in order. Progress and each stage high score are saved separately by difficulty.',stageTestDescription:'Choose any stage from the active campaign, or load a StageSpec, bundle, evaluated bundle, or v5 campaign for testing. Each play uses a new random run.'},
-    ja:{campaign:'キャンペーン',difficulty:'難易度',newGame:'ニューゲーム',continueGame:'コンティニュー',highScores:'ハイスコア',campaignHighScores:'難易度別のメインゲーム面別記録です。スコアはステージクリア時に記録されます。',survival:'サバイバル',survivalHighScores:'ステージ別の最長生存時間です。同時間の場合はスコアで順位を決めます。',survivalDescription:'NORMALキャンペーンでクリアしたステージを選びます。ティア別に15～24秒ごとに圧力が上がり、9・18個目は可能なら色数が増えます。',survivalNoRecord:'記録なし',survivalTime:'生存時間',survivalBest:'ベスト',stageTest:'ステージテスト',settings:'設定',loadData:'データを読み込む',builtIn:'内蔵キャンペーン',useAsMainCampaign:'メインキャンペーンとして使用',restoreBuiltInCampaign:'内蔵キャンペーンに戻す',saveData:'セーブデータ',saveDataHelp:'キャンペーン進行、ハイスコア、サバイバル記録を書き出し、または現在の記録へ統合します。音量設定は含みません。',exportSaveData:'セーブを書き出す',importSaveData:'セーブを読み込む',mergeSaveConfirm:'このセーブを現在の記録へ統合しますか？進行度と記録は高い方を残します。',saveExported:'セーブデータを書き出しました',saveImported:'セーブデータを読み込みました',play:'プレイ',back:'← 戻る',language:'言語',sound:'音声',masterVolume:'マスター音量',bgmVolume:'BGM音量',sfxVolume:'SE音量',paused:'一時停止',resume:'再開',restart:'やり直す',stageSelect:'ステージ選択',title:'タイトル',replay:'もう一度',retry:'リトライ',nextStage:'次のステージ',newHighScore:'ハイスコア更新',campaignComplete:'キャンペーンクリア',stage:'ステージ',score:'スコア',campaignDescription:'現在のキャンペーンを順番に攻略します。進行状況と面別ハイスコアは難易度ごとに保存されます。',stageTestDescription:'現在のキャンペーンから任意のステージを選ぶか、StageSpec、各種バンドル、v5キャンペーンを読み込んでテストできます。プレイごとに新しい乱数を使います。'}
+    en:{campaign:'CAMPAIGN',difficulty:'DIFFICULTY',newGame:'NEW GAME',continueGame:'CONTINUE',highScores:'HIGH SCORES',campaignHighScores:'Campaign stage records by difficulty. Scores are recorded after a stage clear.',survival:'SURVIVAL',survivalHighScores:'Longest survival time by stage. Score breaks a time tie.',survivalDescription:'Choose a stage cleared in the NORMAL campaign. Pressure rises every 15–24 seconds by tier; items 9 and 18 add a color when possible.',survivalNoRecord:'NO RECORD',survivalTime:'SURVIVAL TIME',survivalBest:'BEST',stageTest:'STAGE TEST',settings:'SETTINGS',loadData:'LOAD DATA',builtIn:'BUILT-IN CAMPAIGN',useAsMainCampaign:'USE AS MAIN CAMPAIGN',restoreBuiltInCampaign:'RESTORE BUILT-IN CAMPAIGN',saveData:'SAVE DATA',saveDataHelp:'Export or merge campaign progress, high scores, and Survival records. Audio settings are not included.',exportSaveData:'EXPORT SAVE',importSaveData:'IMPORT SAVE',mergeSaveConfirm:'Merge this save with current records? Higher progress and records will be kept.',saveExported:'Save data exported',saveImported:'Save data imported',play:'PLAY',back:'← BACK',language:'LANGUAGE',sound:'AUDIO',masterVolume:'MASTER VOLUME',bgmVolume:'BGM VOLUME',sfxVolume:'SE VOLUME',paused:'PAUSED',pauseControls:'CONTROLS',pauseControlsNote:'Mouse and touch controls are both supported.',pauseMouse:'MOUSE',pauseMouseHelp:'Move to aim · Left click to fire',pauseSwapKey:'RIGHT CLICK',pauseSwapHelp:'Swap CURRENT and NEXT',pauseTouch:'TOUCH',pauseTouchHelp:'Tap a target to fire · Tap the launcher to swap',pausePauseHelp:'Pause or resume',pausePowerUps:'POWER UPS',pauseSpecialRule:'Activate a marked marble by removing it in a color match.',pauseBombHelp:'Clears nearby marbles',pauseWipeHelp:'Clears that color from the lane',pauseBackHelp:'Moves the chain toward SPAWN',pauseSlowHelp:'Slows chain movement',pauseShotFastHelp:'Speeds up fired marbles',pausePowerDowns:'POWER DOWNS',pausePowerDownNote:'Pink marks are harmful effects.',pauseDriveFastHelp:'Speeds up chain movement',pauseShotSlowHelp:'Slows fired marbles',resume:'RESUME',restart:'RESTART',stageSelect:'STAGE SELECT',title:'TITLE',replay:'PLAY AGAIN',retry:'RETRY',nextStage:'NEXT STAGE',newHighScore:'NEW HIGH SCORE',campaignComplete:'CAMPAIGN COMPLETE',stage:'STAGE',score:'SCORE',campaignDescription:'Play the active campaign in order. Progress and each stage high score are saved separately by difficulty.',stageTestDescription:'Choose any stage from the active campaign, or load a StageSpec, bundle, evaluated bundle, or v5 campaign for testing. Each play uses a new random run.'},
+    ja:{campaign:'キャンペーン',difficulty:'難易度',newGame:'ニューゲーム',continueGame:'コンティニュー',highScores:'ハイスコア',campaignHighScores:'難易度別のメインゲーム面別記録です。スコアはステージクリア時に記録されます。',survival:'サバイバル',survivalHighScores:'ステージ別の最長生存時間です。同時間の場合はスコアで順位を決めます。',survivalDescription:'NORMALキャンペーンでクリアしたステージを選びます。ティア別に15～24秒ごとに圧力が上がり、9・18個目は可能なら色数が増えます。',survivalNoRecord:'記録なし',survivalTime:'生存時間',survivalBest:'ベスト',stageTest:'ステージテスト',settings:'設定',loadData:'データを読み込む',builtIn:'内蔵キャンペーン',useAsMainCampaign:'メインキャンペーンとして使用',restoreBuiltInCampaign:'内蔵キャンペーンに戻す',saveData:'セーブデータ',saveDataHelp:'キャンペーン進行、ハイスコア、サバイバル記録を書き出し、または現在の記録へ統合します。音量設定は含みません。',exportSaveData:'セーブを書き出す',importSaveData:'セーブを読み込む',mergeSaveConfirm:'このセーブを現在の記録へ統合しますか？進行度と記録は高い方を残します。',saveExported:'セーブデータを書き出しました',saveImported:'セーブデータを読み込みました',play:'プレイ',back:'← 戻る',language:'言語',sound:'音声',masterVolume:'マスター音量',bgmVolume:'BGM音量',sfxVolume:'SE音量',paused:'一時停止',pauseControls:'操作方法',pauseControlsNote:'マウス操作とタッチ操作の両方に対応しています。',pauseMouse:'マウス',pauseMouseHelp:'移動で照準 · 左クリックで発射',pauseSwapKey:'右クリック',pauseSwapHelp:'CURRENTとNEXTを交換',pauseTouch:'タッチ',pauseTouchHelp:'狙う場所をタップで発射 · 砲台タップで交換',pausePauseHelp:'一時停止／再開',pausePowerUps:'パワーアップ',pauseSpecialRule:'印の付いたマーブルを色マッチで消すと発動します。',pauseBombHelp:'周囲のマーブルをまとめて消す',pauseWipeHelp:'同じ色をレーン全体から消す',pauseBackHelp:'列をSPAWN方向へ戻す',pauseSlowHelp:'列の進行を遅くする',pauseShotFastHelp:'射出マーブルを速くする',pausePowerDowns:'パワーダウン',pausePowerDownNote:'ピンク色の印は不利な効果です。',pauseDriveFastHelp:'列の進行が速くなる',pauseShotSlowHelp:'射出マーブルが遅くなる',resume:'再開',restart:'やり直す',stageSelect:'ステージ選択',title:'タイトル',replay:'もう一度',retry:'リトライ',nextStage:'次のステージ',newHighScore:'ハイスコア更新',campaignComplete:'キャンペーンクリア',stage:'ステージ',score:'スコア',campaignDescription:'現在のキャンペーンを順番に攻略します。進行状況と面別ハイスコアは難易度ごとに保存されます。',stageTestDescription:'現在のキャンペーンから任意のステージを選ぶか、StageSpec、各種バンドル、v5キャンペーンを読み込んでテストできます。プレイごとに新しい乱数を使います。'}
   };
 
   function normalizeCampaignDifficulty(value){return Object.hasOwn(CAMPAIGN_DIFFICULTIES,value)?value:'NORMAL'}
@@ -890,7 +952,9 @@
     repair:()=>repairDriveInvariant(true),
     syncRumble:updateWaveRumbleSync,
     stepState:updateWaveState,
-    destroyIds:ids=>{const doomed=new Set(ids);return destroyByEffect(m=>doomed.has(m.id),{kind:'test'})}
+    destroyIds:ids=>{const doomed=new Set(ids);return destroyByEffect(m=>doomed.has(m.id),{kind:'test'})},
+    crossingThresholds:(lowerS,halfSpan,r=BALL_R)=>lowerPassThresholds(lowerS,halfSpan,r),
+    crossingOverlap:(delta,halfSpan,r=BALL_R)=>projectedMarbleOverlap(delta,halfSpan,r)
   };
   function returnToTitle(){paused=false;aimVisible=false;stopStageMusic(true);setShellScreen('title')}
   function newScoreState(){return{total:0,buckets:{marbleClear:0,specialClear:0,shotStreak:0,magneticChain:0,gapShot:0,specialActivate:0,waveClearBonus:0,safetyBonus:0},successfulShots:0,failedShots:0,currentStreak:0,maxStreak:0,gapShots:0,maxGaps:0}}
@@ -926,10 +990,28 @@
     if(campaignResultWasHighScore)title.textContent+=` · ${t.newHighScore}`;
     if(survivalResultWasRecord)title.textContent+=` · ${t.newHighScore}`;
     const b=scoreState.buckets,ja=uiLanguage==='ja';
-    const rows=[[ja?'マーブル消去':'MARBLE CLEAR',b.marbleClear],[ja?'特殊消去':'SPECIAL CLEAR',b.specialClear],[ja?'ショットストリーク':'SHOT STREAK',b.shotStreak],[ja?'磁力チェイン':'MAGNETIC CHAIN',b.magneticChain],[ja?'ギャップショット':'GAP SHOT',b.gapShot],[ja?'特殊発動':'SPECIAL ACTIVATE',b.specialActivate],['WAVE CLEAR BONUS',b.waveClearBonus],[ja?'セーフティボーナス':'SAFETY BONUS',b.safetyBonus]];
+    const rows=ja?[
+      ['マーブル消去',b.marbleClear,'色マッチで消したマーブル数に応じた基本スコアです。'],
+      ['特殊消去',b.specialClear,'BOMBやWIPEの効果で追加消去したマーブルのスコアです。'],
+      ['ショットストリーク',b.shotStreak,'マーブルを消す射撃を連続で成功させたボーナスです。連続数が多いほど高得点になります。'],
+      ['磁力チェイン',b.magneticChain,'磁力で再結合した列が続けて色マッチしたときのチェインボーナスです。'],
+      ['ギャップショット',b.gapShot,'弾がレーン上の隙間を通って命中したボーナスです。通過した隙間が多い、または狭いほど高得点です。'],
+      ['特殊発動',b.specialActivate,'印付きマーブルを色マッチで消し、パワーアップ／ダウンを発動させたスコアです。'],
+      ['WAVE CLEAR BONUS',b.waveClearBonus,'次のWAVEより前に盤面を全消ししたボーナスです。次のWAVEまでの残り時間が長いほど高得点です。'],
+      ['セーフティボーナス',b.safetyBonus,'最後のマーブルを消した位置からBASEまでの安全距離に応じたクリアボーナスです。']
+    ]:[
+      ['MARBLE CLEAR',b.marbleClear,'Base score for marbles removed by color matches.'],
+      ['SPECIAL CLEAR',b.specialClear,'Score for additional marbles removed by BOMB or WIPE effects.'],
+      ['SHOT STREAK',b.shotStreak,'Bonus for consecutive shots that clear marbles. Longer streaks score more.'],
+      ['MAGNETIC CHAIN',b.magneticChain,'Chain bonus when magnetically reconnected groups continue into another color match.'],
+      ['GAP SHOT',b.gapShot,'Bonus for hitting after the shot passes through lane gaps. More or narrower gaps score more.'],
+      ['SPECIAL ACTIVATE',b.specialActivate,'Score for activating a marked power-up or power-down through a color match.'],
+      ['WAVE CLEAR BONUS',b.waveClearBonus,'Bonus for clearing the board before the next WAVE. More remaining time scores more.'],
+      ['SAFETY BONUS',b.safetyBonus,'Clear bonus based on the safe track distance from the final cleared marble to BASE.']
+    ];
     const difficultyText=activeGameMode==='campaign'?` · ${ja?'難易度':'DIFFICULTY'} ${difficultyLabel()}`:'';
     const survivalText=activeGameMode==='survival'?`<div class="result-row total"><span>${t.survivalTime}</span><strong>${formatDuration(survivalState?.elapsed)}</strong></div>`:'';
-    document.getElementById('resultStats').innerHTML=`<div class="result-breakdown">${rows.map(([k,v])=>`<div class="result-row"><span>${k}</span><strong>${v.toLocaleString()}</strong></div>`).join('')}${survivalText}<div class="result-row total"><span>${ja?'合計':'TOTAL'}</span><strong>${scoreValue().toLocaleString()}</strong></div></div><div class="result-record">${ja?'発射':'SHOTS'} ${shots} · ${ja?'成功率':'SUCCESS'} ${shots?Math.round(scoreState.successfulShots/shots*100):0}% · ${ja?'最大ストリーク':'MAX STREAK'} ${scoreState.maxStreak} · ${ja?'最大磁力チェイン':'MAX CHAIN'} ${maxChain} · ${ja?'ギャップショット':'GAP SHOTS'} ${scoreState.gapShots}${difficultyText}</div>`;
+    document.getElementById('resultStats').innerHTML=`<div class="result-breakdown">${rows.map(([k,v,tip])=>`<div class="result-row score-help" tabindex="0" data-tooltip="${tip}" aria-label="${k}: ${v.toLocaleString()}. ${tip}"><span>${k}</span><strong>${v.toLocaleString()}</strong></div>`).join('')}${survivalText}<div class="result-row total"><span>${ja?'合計':'TOTAL'}</span><strong>${scoreValue().toLocaleString()}</strong></div></div><div class="result-record">${ja?'発射':'SHOTS'} ${shots} · ${ja?'成功率':'SUCCESS'} ${shots?Math.round(scoreState.successfulShots/shots*100):0}% · ${ja?'最大ストリーク':'MAX STREAK'} ${scoreState.maxStreak} · ${ja?'最大磁力チェイン':'MAX CHAIN'} ${maxChain} · ${ja?'ギャップショット':'GAP SHOTS'} ${scoreState.gapShots}${difficultyText}</div>`;
     configureResultActions();setShellScreen('result');if(cleared)startStageClearMusic();else startGameOverMusic();
   }
 
@@ -2556,15 +2638,43 @@
     const t=clamp(((px-a.x)*vx+(py-a.y)*vy)/den,0,1);
     return Math.hypot(px-(a.x+vx*t),py-(a.y+vy*t));
   }
-  function trackSlicePoints(centerS,halfLength=CROSSING_OCCLUSION_HALF_LENGTH,step=6) {
+  function trackSlicePoints(centerS,halfLength=CROSSING_OVERDRAW_HALF_LENGTH,step=6) {
     const a=clamp(centerS-halfLength,0,track.length),b=clamp(centerS+halfLength,0,track.length);
     const n=Math.max(2,Math.ceil((b-a)/step));
     const pts=[];
     for(let i=0;i<=n;i++)pts.push(trackPos(a+(b-a)*(i/n)));
     return pts;
   }
-  function lowerPassOccluded(s) {
-    return stageCrossings.some(c=>Math.abs(s-c.lowerS)<CROSSING_OCCLUSION_HALF_LENGTH);
+  function lowerPassThresholds(lowerS,halfSpan,r=BALL_R) {
+    const reveal=2*r*CROSSING_ENTRY_FRACTION;
+    return{
+      start:lowerS-halfSpan-r+reveal,
+      end:lowerS+halfSpan-r+reveal
+    };
+  }
+  function projectedMarbleOverlap(delta,halfSpan,r=BALL_R) {
+    const overlap=Math.max(0,Math.min(delta+r,halfSpan)-Math.max(delta-r,-halfSpan));
+    return clamp(overlap/(2*r),0,1);
+  }
+  function crossingLowerProfile(c,r=BALL_R) {
+    const upper=trackTangent(c.upperS),lower=trackTangent(c.lowerS);
+    const sinAngle=Math.max(CROSSING_MIN_SIN_ANGLE,Math.abs(upper.x*lower.y-upper.y*lower.x));
+    const halfSpan=Math.min(CROSSING_COMPOSITE_RADIUS,(TRACK_OUTER_WIDTH/2)/sinAngle);
+    return{halfSpan,...lowerPassThresholds(c.lowerS,halfSpan,r)};
+  }
+  function lowerPassOccluded(s,r=BALL_R) {
+    return stageCrossings.some(c=>{
+      const profile=crossingLowerProfile(c,r);
+      return s>=profile.start&&s<profile.end;
+    });
+  }
+  function lowerPassShadowAmount(s,r=BALL_R) {
+    let amount=0;
+    for(const c of stageCrossings){
+      const profile=crossingLowerProfile(c,r);
+      amount=Math.max(amount,projectedMarbleOverlap(s-c.lowerS,profile.halfSpan,r));
+    }
+    return amount;
   }
   // Crossing rails are NOT projectile blockers. Empty rail is always shoot-through.
   // Lower-pass marbles are made untargetable by lowerPassOccluded() instead.
@@ -2890,12 +3000,56 @@
     ctx.fillStyle='rgba(5,8,12,.72)';
     ctx.strokeStyle=meta.polarity==='down' ? '#ff6f8d' : '#ffe17a';
     ctx.lineWidth=Math.max(1.6,rr*.085);
-    ctx.beginPath(); ctx.arc(x,y,rr*.48,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=meta.polarity==='down' ? '#ff9bb0' : '#fff0a6';
-    const len=meta.icon.length;
-    ctx.font=`800 ${Math.max(8,rr*(len>1?.38:.58))}px system-ui`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(meta.icon,x,y+.5);
+    ctx.beginPath(); ctx.arc(x,y,rr*.59,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    drawSpecialGlyph(kind,x,y,rr*.88,meta.polarity==='down' ? '#ff9bb0' : '#fff0a6');
+    ctx.restore();
+  }
+
+  function drawSpecialGlyph(kind,x,y,size,color) {
+    const s=size;
+    const circle=(cx,cy,r,fill=false)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);fill?ctx.fill():ctx.stroke()};
+    ctx.save();ctx.translate(x,y);ctx.strokeStyle=color;ctx.fillStyle=color;
+    ctx.lineWidth=Math.max(1.35,s*.105);ctx.lineCap='round';ctx.lineJoin='round';
+    switch(kind){
+      case 'bomb':
+        circle(-s*.10,s*.12,s*.28,true);
+        ctx.beginPath();ctx.moveTo(s*.08,-s*.10);ctx.bezierCurveTo(s*.17,-s*.35,s*.32,-s*.43,s*.47,-s*.34);ctx.stroke();
+        break;
+      case 'colorWipe':
+        ctx.beginPath();ctx.moveTo(-s*.39,s*.37);ctx.lineTo(s*.39,-s*.37);ctx.stroke();
+        circle(-s*.26,s*.25,s*.13,true);circle(0,0,s*.13,true);circle(s*.26,-s*.25,s*.13,true);
+        break;
+      case 'back':
+        ctx.beginPath();ctx.arc(s*.04,s*.03,s*.31,-.70*Math.PI,.82*Math.PI);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(-s*.31,-s*.13);ctx.lineTo(-s*.42,-s*.30);ctx.lineTo(-s*.22,-s*.31);ctx.stroke();
+        break;
+      case 'slow':
+        ctx.beginPath();ctx.moveTo(-s*.27,-s*.38);ctx.lineTo(s*.27,-s*.38);ctx.moveTo(-s*.27,s*.38);ctx.lineTo(s*.27,s*.38);
+        ctx.moveTo(-s*.20,-s*.36);ctx.bezierCurveTo(-s*.20,-s*.05,-s*.02,-s*.05,0,0);ctx.bezierCurveTo(-s*.02,s*.05,-s*.20,s*.05,-s*.20,s*.36);
+        ctx.moveTo(s*.20,-s*.36);ctx.bezierCurveTo(s*.20,-s*.05,s*.02,-s*.05,0,0);ctx.bezierCurveTo(s*.02,s*.05,s*.20,s*.05,s*.20,s*.36);ctx.stroke();
+        break;
+      case 'shotFast':
+        ctx.beginPath();ctx.moveTo(0,s*.41);ctx.lineTo(0,-s*.41);ctx.moveTo(-s*.30,-s*.08);ctx.lineTo(0,-s*.41);ctx.lineTo(s*.30,-s*.08);ctx.stroke();
+        break;
+      case 'driveFast':
+        circle(-s*.34,0,s*.105);circle(-s*.08,0,s*.105);ctx.beginPath();ctx.moveTo(s*.04,0);ctx.lineTo(s*.40,0);ctx.moveTo(s*.20,-s*.20);ctx.lineTo(s*.40,0);ctx.lineTo(s*.20,s*.20);ctx.stroke();
+        break;
+      case 'shotSlow':
+        ctx.beginPath();ctx.moveTo(0,-s*.41);ctx.lineTo(0,s*.41);ctx.moveTo(-s*.30,s*.08);ctx.lineTo(0,s*.41);ctx.lineTo(s*.30,s*.08);ctx.stroke();
+        break;
+    }
+    ctx.restore();
+  }
+
+  function drawLowerPassShadow(x,y,amount,r=BALL_R) {
+    if(amount<=0)return;
+    ctx.save();
+    ctx.globalAlpha=.48*amount;
+    const g=ctx.createRadialGradient(x-r*.25,y-r*.32,r*.08,x,y,r*1.08);
+    g.addColorStop(0,'rgba(9,18,27,.60)');
+    g.addColorStop(1,'rgba(1,4,8,.96)');
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 
@@ -2982,9 +3136,11 @@
       for (const m of seg.marbles) {
         if (m.s<0 || m.s>track.length) continue;
         if (marbleNeedsUpperLayer(m)) continue;
-        const p=trackPos(m.s+(m.visualOffset||0));
+        const visualS=m.s+(m.visualOffset||0);
+        const p=trackPos(visualS);
         drawBall(p.x,p.y,m.color,BALL_R);
         drawSpecialBadge(p.x,p.y,m.special,BALL_R);
+        drawLowerPassShadow(p.x,p.y,lowerPassShadowAmount(m.s),BALL_R);
       }
     }
   }
@@ -3371,7 +3527,7 @@
 
   // Initialize the hidden engine state; Stage Test assigns a fresh run seed on PLAY.
   reset((Date.now() ^ 0xA51C3E21)>>>0);
-  paused=true;initializeMainCampaign();setCampaignDifficulty(activeCampaignDifficulty,{persist:false});setLanguage('en');setShellScreen('title');
+  paused=true;initializeMainCampaign();setCampaignDifficulty(activeCampaignDifficulty,{persist:false});setLanguage('ja');setShellScreen('title');
   requestAnimationFrame(loop);
 })();
 </script>

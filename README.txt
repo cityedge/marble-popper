@@ -1,4 +1,4 @@
-MARBLE POPPER v0.42 + AUTHORING TOOLS
+MARBLE POPPER v0.46 + AUTHORING TOOLS
 =====================================
 
 日本語

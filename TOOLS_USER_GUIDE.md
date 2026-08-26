@@ -3,7 +3,7 @@
 このガイドは、公開パッケージに含まれる3つのブラウザツールを使い、レーン形状の生成からプレイ可能なキャンペーンJSONの完成まで進める方法を説明します。
 
 - Stage Generator v0.19
-- Difficulty Evaluator v0.6
+- Difficulty Evaluator v0.7
 - Campaign Builder v0.9
 
 各ツールは自己完結したHTMLです。インストールやWebサーバーは不要で、選んだJSONを外部へ送信しません。
@@ -73,7 +73,7 @@ Generatorは10種類の形状ファミリーを固定順で繰り返します。
 | ファイル | ツール |
 |---|---|
 | `STAGE_GENERATOR.html` | Stage Generator v0.19 |
-| `DIFFICULTY_EVALUATOR.html` | Difficulty Evaluator v0.6 |
+| `DIFFICULTY_EVALUATOR.html` | Difficulty Evaluator v0.7 |
 | `CAMPAIGN_BUILDER.html` | Campaign Builder v0.9 |
 
 ChromeまたはEdgeを推奨します。同時に3つのタブで開き、ダウンロードフォルダーを介してJSONを順番に渡すと効率的です。
@@ -346,11 +346,11 @@ Finalへ配置する障害物数です。円または矩形を、レーン、砲
 
 ---
 
-# Difficulty Evaluator v0.6
+# Difficulty Evaluator v0.7
 
 ## 役割と限界
 
-PCの垂直射撃を前提に、レーンの各位置で「先頭付近のマーブルへ下から弾を通せるか」を仮想評価します。下側交差、手前のマーブル、障害物による遮蔽を調べ、BASE寄りと長く続く難所を重くして0～100程度のスコアへ集約します。
+PCの垂直射撃を前提に、レーンの各位置で「先頭付近のマーブルへ下から弾を通せるか」を仮想評価します。下側交差、手前のマーブル、障害物による遮蔽を調べ、BASE寄りと長く続く難所を重くして0～100程度のスコアへ集約します。下側交差はゲームと同じく、マーブル直径の約2割が上側レーンの下へ入ってから、反対側へ約2割出るまでを遮蔽扱いにします。交差角度が浅いほど実際に覆われる距離が長くなるため、遮蔽区間も長くなります。
 
 評価しないもの:
 
@@ -494,7 +494,7 @@ Target表を表示します。代表的な理由:
 - `clear`: 垂直弾道が通る
 - `eval #n`: 別の評価マーブルが遮る
 - `tail x=n`: 不確実な後続が部分遮蔽
-- `lower crossing`: 下側交差のため橋越しに狙えない
+- `lower crossing`: 下側交差で、ゲームと同じ約2割基準の遮蔽区間にあるため狙えない
 - `obstacle`: 障害物が弾道を遮る
 
 ## ランキング表
@@ -969,7 +969,7 @@ WAVEサイズ単独ではなく、次の組合せで見ます。
 - StageSpec v1が混ざっている
 - StageSpec内に`gameplay`がある
 
-標準GeneratorのバッチをEvaluator v0.6で評価し直すのが最も確実です。
+標準GeneratorのバッチをEvaluator v0.7で評価し直すのが最も確実です。
 
 ### Tier Settingsを読み込めない
 
@@ -1000,13 +1000,13 @@ Evaluatorは形状とPC垂直弾道だけを評価します。弾速、WAVE、�
 ## バージョン情報
 
 - Stage Generator Lab: v0.19
-- Difficulty Evaluator: v0.6
+- Difficulty Evaluator: v0.7
 - Campaign Builder: v0.9
 - StageSpec: v2
 - Evaluated Stage Bundle: v2
 - GameplayProfile: v5
 - CampaignSpec: v1
-- ゲーム互換版: Marble Popper v0.42
+- ゲーム互換版: Marble Popper v0.46
 - ライセンス: MIT License
 
 ツールの計算式や出力形式を改造して公開する場合は、バージョンやモデル名を変更し、生成データの`source`／`evaluation`へ由来を残してください。

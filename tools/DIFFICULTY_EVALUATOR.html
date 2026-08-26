@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Marble Difficulty Evaluator v0.6</title>
+<title>Marble Difficulty Evaluator v0.7</title>
 <style>
   :root{
     color-scheme:dark;
@@ -65,7 +65,7 @@
 </head>
 <body>
 <header>
-  <div><h1>Marble Difficulty Evaluator v0.6</h1><div class="sub">StageSpec v1/v2 · geometry-only PC vertical-fire accessibility model</div></div>
+  <div><h1>Marble Difficulty Evaluator v0.7</h1><div class="sub">StageSpec v1/v2 · geometry-only PC vertical-fire accessibility model</div></div>
   <button id="loadBtn" class="primary">Load StageSpecs</button>
   <input id="fileInput" type="file" accept=".json,application/json" multiple hidden />
   <button id="clearBtn">Clear</button>
@@ -150,7 +150,7 @@ const TRACK_OUTER_WIDTH=58,TRACK_MID_WIDTH=51,TRACK_INNER_WIDTH=43;
 const PROJECTILE_R=18;
 const HIT_R=DEFAULT_R+PROJECTILE_R-2; // matches game: BALL_R + p.r - 2
 const SHOOTER_Y=674,PROJECTILE_START_Y=SHOOTER_Y-43;
-const CROSSING_OCCLUSION_HALF_LENGTH=DEFAULT_SPACING*1.65;
+const CROSSING_ENTRY_FRACTION=.20,CROSSING_MIN_SIN_ANGLE=.25;
 const CROSSING_COMPOSITE_RADIUS=TRACK_OUTER_WIDTH*1.02;
 const CROSSING_OVERDRAW_HALF_LENGTH=CROSSING_COMPOSITE_RADIUS+TRACK_OUTER_WIDTH*1.25;
 const $=id=>document.getElementById(id);
@@ -172,6 +172,10 @@ function trackPos(track,s){
   while(lo+1<hi){const mid=(lo+hi)>>1;if(track.cum[mid]<s)lo=mid;else hi=mid}
   const a=track.pts[lo],b=track.pts[hi],span=Math.max(1e-9,track.cum[hi]-track.cum[lo]),t=(s-track.cum[lo])/span;
   return{x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+}
+function trackTangent(track,s){
+  const a=trackPos(track,s-3),b=trackPos(track,s+3),len=Math.hypot(b.x-a.x,b.y-a.y)||1;
+  return{x:(b.x-a.x)/len,y:(b.y-a.y)/len};
 }
 function validateStageSpec(spec,name='StageSpec'){
   if(!spec||typeof spec!=='object'||spec.format!=='marble-popper-stage'||![1,2].includes(spec.schemaVersion))throw new Error(`${name}: unsupported format; expected marble-popper-stage v1 or v2.`);
@@ -209,8 +213,27 @@ function validateStageSpec(spec,name='StageSpec'){
     spec,track,crossings,obstacles,r,spacing,eval:null
   };
 }
+function lowerPassThresholds(lowerS,halfSpan,r){
+  const reveal=2*r*CROSSING_ENTRY_FRACTION;
+  return{start:lowerS-halfSpan-r+reveal,end:lowerS+halfSpan-r+reveal};
+}
+function projectedMarbleOverlap(delta,halfSpan,r){
+  const overlap=Math.max(0,Math.min(delta+r,halfSpan)-Math.max(delta-r,-halfSpan));
+  return clamp(overlap/(2*r),0,1);
+}
+function crossingLowerProfile(stage,c){
+  const upper=trackTangent(stage.track,c.upperS),lower=trackTangent(stage.track,c.lowerS);
+  const sinAngle=Math.max(CROSSING_MIN_SIN_ANGLE,Math.abs(upper.x*lower.y-upper.y*lower.x));
+  const halfSpan=Math.min(CROSSING_COMPOSITE_RADIUS,(TRACK_OUTER_WIDTH/2)/sinAngle);
+  return{halfSpan,...lowerPassThresholds(c.lowerS,halfSpan,stage.r)};
+}
 function lowerPassOccluded(stage,s){
-  return stage.crossings.some(c=>Math.abs(s-c.lowerS)<stage.spacing*1.65);
+  return stage.crossings.some(c=>{const p=crossingLowerProfile(stage,c);return s>=p.start&&s<p.end});
+}
+function lowerPassShadowAmount(stage,s){
+  let amount=0;
+  for(const c of stage.crossings){const p=crossingLowerProfile(stage,c);amount=Math.max(amount,projectedMarbleOverlap(s-c.lowerS,p.halfSpan,stage.r))}
+  return amount;
 }
 function marbleRayEntryY(targetPos,blockPos,hitR){
   const dx=Math.abs(blockPos.x-targetPos.x);if(dx>=hitR)return null;
@@ -448,15 +471,18 @@ function drawEndpoints(stage){
   ctx.font='800 9px system-ui';ctx.fillStyle='#080b10';ctx.strokeStyle='#607187';ctx.beginPath();ctx.arc(a.x,a.y,22,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#aab7c8';ctx.fillText('SPAWN',a.x,a.y);
   ctx.fillStyle='#030507';ctx.strokeStyle='#a75252';ctx.lineWidth=4;ctx.beginPath();ctx.arc(b.x,b.y,25,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#d28b8b';ctx.fillText('BASE',b.x,b.y);ctx.restore();
 }
-function drawDebugMarble(m,fill,alpha,outline=null,label=''){
-  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.strokeStyle=outline||'rgba(255,255,255,.45)';ctx.lineWidth=outline?4:2;ctx.beginPath();ctx.arc(m.pos.x,m.pos.y,DEFAULT_R,0,Math.PI*2);ctx.fill();ctx.stroke();
+function drawDebugMarble(stage,m,fill,alpha,outline=null,label=''){
+  const shadow=lowerPassShadowAmount(stage,m.s);
+  ctx.save();ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.strokeStyle=outline||'rgba(255,255,255,.45)';ctx.lineWidth=outline?4:2;ctx.beginPath();ctx.arc(m.pos.x,m.pos.y,stage.r,0,Math.PI*2);ctx.fill();
+  if(shadow>0){ctx.save();ctx.globalAlpha=.48*shadow;ctx.fillStyle='#03070c';ctx.beginPath();ctx.arc(m.pos.x,m.pos.y,stage.r,0,Math.PI*2);ctx.fill();ctx.restore()}
+  ctx.stroke();
   if(label){ctx.globalAlpha=1;ctx.fillStyle='#071018';ctx.font='700 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,m.pos.x,m.pos.y)}ctx.restore();
 }
 function drawStateMarbles(stage,state){
   // Tail first; opacity directly visualizes p(x).
-  for(const m of state.tailMarbles)drawDebugMarble(m,'#91a0b1',.10+.52*m.p,null,'');
+  for(const m of state.tailMarbles)drawDebugMarble(stage,m,'#91a0b1',.10+.52*m.p,null,'');
   for(let i=state.evalMarbles.length-1;i>=0;i--){
-    const m=state.evalMarbles[i],r=state.results[i],outline=difficultyColor(r.h,1);drawDebugMarble(m,'#d9e3ee',.94,outline,String(i+1));
+    const m=state.evalMarbles[i],r=state.results[i],outline=difficultyColor(r.h,1);drawDebugMarble(stage,m,'#d9e3ee',.94,outline,String(i+1));
   }
 }
 function renderPreview(stage){
