@@ -6,7 +6,7 @@
 
 ## すぐに遊ぶ
 
-1. GitHubの **Releases** から最新の `MarblePopper_v0.54.zip` をダウンロードします。
+1. GitHubの **Releases** から最新の `MarblePopper_v0.55.zip` をダウンロードします。
 2. ZIPをすべて展開します。
 3. `PLAY_MARBLE_POPPER.html` または `index.html` をChrome／Edgeで開きます。
 4. タイトル画面で難易度を選び、**ニューゲーム**を押します。
@@ -66,14 +66,14 @@ HTMLの場所、公開URL、ブラウザ、ブラウザプロファイルが変�
 
 ## 開発版の起動
 
-ビルド工程なしで `apps/marble_popper_mvp_v54.html` を開けます。配布ZIPを再構築する場合は、プロジェクトの仮想環境から次を実行します。
+ビルド工程なしで `apps/marble_popper_mvp_v55.html` を開けます。配布ZIPを再構築する場合は、プロジェクトの仮想環境から次を実行します。
 
 ```powershell
 .\.venv\Scripts\python.exe tools\build_distribution.py
 .\.venv\Scripts\python.exe tools\verify_distribution.py
 ```
 
-生成物は `dist/MarblePopper_v0.54/` と `dist/MarblePopper_v0.54.zip` です。
+生成物は `dist/MarblePopper_v0.55/` と `dist/MarblePopper_v0.55.zip` です。
 
 ## License
 

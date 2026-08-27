@@ -1,20 +1,20 @@
 {
   "format": "marble-popper-distribution",
   "schemaVersion": 1,
-  "package": "MarblePopper_v0.54",
-  "gameVersion": "0.54",
-  "builtAt": "2026-08-27T05:42:31.140630+00:00",
+  "package": "MarblePopper_v0.55",
+  "gameVersion": "0.55",
+  "builtAt": "2026-08-27T13:10:58.398751+00:00",
   "entryPoint": "index.html",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "bytes": 10804,
-      "sha256": "f0d96da889fd3ba876c3fbb05d598b8cd08e4c096e901b6da140fbe0c54ef2ca"
+      "bytes": 11458,
+      "sha256": "21875af9829f5f9c3618a127f14ecc57e3ff3d16cc819f6c7164ce5b10148770"
     },
     {
       "path": "GITHUB_RELEASE_GUIDE.md",
       "bytes": 6895,
-      "sha256": "8d43a2eb64923d3b6f2bcda93c2327e4a8c896ba84f2d9225d044d0635ec0a5d"
+      "sha256": "c57fd04dccf11632f6e973f633fde957643d1166f320072b397d5c1eb5b4f864"
     },
     {
       "path": "LICENSE",
@@ -23,18 +23,18 @@
     },
     {
       "path": "PLAY_MARBLE_POPPER.html",
-      "bytes": 227294,
-      "sha256": "8a3f83b79e6343f1edf4c4a83ce1aad4c831db78d8ed780362039704c9a14e8b"
+      "bytes": 229572,
+      "sha256": "704544a493a58a5ea5102ffea9be5dc4216f9f047977589f6ce41a8f339f9cd6"
     },
     {
       "path": "README.md",
       "bytes": 4551,
-      "sha256": "27d86c4f105a5285d6796aa95269b0b50486b7cbfbeae7fcf87583ad54c6b032"
+      "sha256": "66dec939073ca82c874672b5069013f6dbb7bc0aa7200a438d7a87b2640658c3"
     },
     {
       "path": "README.txt",
       "bytes": 4420,
-      "sha256": "afdef29b72f1c9c16b052169e8b2d999acb5c5dd4c8121073bb7be12647bcf07"
+      "sha256": "40ac34038776de33ce1adb412187be4322c47047533728424803b837a7b52a4e"
     },
     {
       "path": "TOOLS_USER_GUIDE.md",
@@ -44,7 +44,7 @@
     {
       "path": "USER_GUIDE.md",
       "bytes": 37543,
-      "sha256": "fa9d7293ee407741f29cee3c0cbf3d024434a1eb4fc7504e6f70ffce7733a102"
+      "sha256": "62cc2f2906dcc4783d215029ae3e845eff99a7a860536836132c08df5a55a592"
     },
     {
       "path": "assets/audio/bgm.ogg",
@@ -88,8 +88,8 @@
     },
     {
       "path": "index.html",
-      "bytes": 227294,
-      "sha256": "8a3f83b79e6343f1edf4c4a83ce1aad4c831db78d8ed780362039704c9a14e8b"
+      "bytes": 229572,
+      "sha256": "704544a493a58a5ea5102ffea9be5dc4216f9f047977589f6ce41a8f339f9cd6"
     },
     {
       "path": "tools/CAMPAIGN_BUILDER.html",
