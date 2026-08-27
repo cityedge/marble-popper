@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-<title>Marble Popper v0.46</title>
+<title>Marble Popper v0.54</title>
 <style>
   :root {
     color-scheme: dark;
@@ -33,16 +33,16 @@
   .shell-screen.active { opacity:1; visibility:visible; pointer-events:auto; }
   .utility { position:absolute; z-index:9; top:3.2%; right:3.2%; display:flex; gap:8px; }
   .utility button { min-width:46px; height:42px; padding:0 13px; border-radius:22px; background:rgba(5,12,19,.82); font-size:13px; }
-  .title-panel { position:absolute; left:3.3%; top:5.5%; bottom:5.5%; width:36%; min-width:360px; padding:5.5% 4.2% 4%; border:2px solid rgba(66,91,116,.44); border-radius:52px 92px 58px 52px; background:linear-gradient(90deg,rgba(5,13,21,.96),rgba(7,17,26,.83)); box-shadow:0 28px 70px rgba(0,0,0,.4),inset 0 0 0 7px rgba(255,255,255,.018); }
-  .game-title { margin:0 0 7%; font-size:clamp(44px,5.2vw,82px); line-height:.9; letter-spacing:.015em; color:#f2f5f8; text-shadow:0 5px 0 #8b97a3,0 12px 20px rgba(0,0,0,.55); }
+  .title-panel { position:absolute; left:3.3%; top:5.5%; bottom:5.5%; width:36%; min-width:360px; padding:4% 4.2% 3%; border:2px solid rgba(66,91,116,.44); border-radius:52px 92px 58px 52px; background:linear-gradient(90deg,rgba(5,13,21,.96),rgba(7,17,26,.83)); box-shadow:0 28px 70px rgba(0,0,0,.4),inset 0 0 0 7px rgba(255,255,255,.018); }
+  .game-title { margin:0 0 5%; font-size:clamp(42px,4.7vw,74px); line-height:.9; letter-spacing:.015em; color:#f2f5f8; text-shadow:0 5px 0 #8b97a3,0 12px 20px rgba(0,0,0,.55); }
   .title-marbles { position:absolute; top:12%; right:8%; display:grid; gap:8px; }
   .title-marble { width:clamp(24px,2.7vw,42px); aspect-ratio:1; border-radius:50%; border:2px solid rgba(255,255,255,.2); box-shadow:inset -6px -8px 10px rgba(0,0,0,.36),inset 5px 6px 8px rgba(255,255,255,.28),0 5px 10px rgba(0,0,0,.4); }
   .title-marble.red{background:#ff5e67}.title-marble.gold{background:#ffc84a}.title-marble.blue{background:#51a7ff}
   .title-difficulty { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:12px; margin:-1% 2% 3%; color:#8fa6bc; font-size:12px; font-weight:900; letter-spacing:.08em; }
   .title-difficulty select { width:100%; min-width:0; color:var(--gold); border-color:rgba(255,195,74,.5); background:rgba(5,13,21,.82); }
   .title-difficulty select:focus-visible { outline:0; }
-  .menu { display:grid; gap:1.6%; }
-  .menu-btn { position:relative; display:flex; align-items:center; width:100%; height:clamp(55px,7.2vh,72px); padding:0 7%; border:0; border-radius:38px; background:transparent; color:#a9bdd1; text-align:left; white-space:nowrap; font-size:clamp(18px,2.1vw,31px); letter-spacing:.06em; }
+  .menu { display:grid; gap:.7%; }
+  .menu-btn { position:relative; display:flex; align-items:center; width:100%; height:clamp(44px,6vh,58px); padding:0 7%; border:0; border-radius:38px; background:transparent; color:#a9bdd1; text-align:left; white-space:nowrap; font-size:clamp(17px,1.9vw,28px); letter-spacing:.06em; }
   .menu-btn::before { content:'◎'; display:inline-grid; place-items:center; width:1.7em; margin-right:.5em; color:#7791aa; }
   .menu-btn:hover,.menu-btn:focus-visible { outline:0; color:var(--gold); background:rgba(9,18,27,.72); box-shadow:inset 0 0 0 2px rgba(255,195,74,.82),0 0 20px rgba(255,183,44,.12); }
   .menu-btn:hover::before,.menu-btn:focus-visible::before { color:var(--gold); }
@@ -107,6 +107,14 @@
   .result-row.total { margin-top:8px; padding-top:11px; color:var(--text); font-size:18px; border-top:1px solid #647f9b; border-bottom:0; }
   .result-record { color:var(--muted); font-size:12px; line-height:1.65; }
   .modal-actions { display:grid; gap:10px; }
+  .random-generating-overlay { position:absolute; inset:0; z-index:20; display:grid; place-items:center; background:rgba(2,7,12,.42); cursor:progress; }
+  .random-generating-overlay[hidden] { display:none; }
+  .random-generating-dialog { width:min(360px,82%); padding:25px 30px 27px; border:1px solid rgba(95,139,177,.82); border-radius:18px; background:rgba(5,13,21,.97); box-shadow:0 20px 60px rgba(0,0,0,.62); text-align:center; }
+  .random-generating-dialog h2 { margin:0 0 8px; color:#f2f6fa; font-size:24px; letter-spacing:.035em; }
+  .random-generating-detail { min-height:1.5em; margin:0; color:#b8cadb; font-size:13px; font-weight:800; line-height:1.5; }
+  .random-generating-bar { position:relative; height:5px; margin-top:18px; overflow:hidden; border-radius:999px; background:rgba(102,132,160,.22); }
+  .random-generating-bar::after { content:''; position:absolute; top:0; bottom:0; left:-8%; width:38%; border-radius:inherit; background:linear-gradient(90deg,rgba(255,195,74,.25),#ffc34a,rgba(255,195,74,.25)); animation:random-generating-slide 1s ease-in-out infinite alternate; will-change:transform; }
+  @keyframes random-generating-slide { from{transform:translateX(0)} to{transform:translateX(205%)} }
   .toast { position:absolute; z-index:12; left:50%; bottom:5%; transform:translate(-50%,20px); padding:11px 18px; border:1px solid #49647f; border-radius:999px; background:rgba(5,13,21,.94); opacity:0; transition:.25s; pointer-events:none; }
   .toast.show { opacity:1; transform:translate(-50%,0); }
   .settings-list { display:grid; gap:12px; margin:25px 0; }
@@ -126,7 +134,7 @@
   .high-score-row strong { min-width:7em; text-align:right; font-variant-numeric:tabular-nums; }
   .score-section-title { margin:28px 0 4px; color:var(--gold); font-size:15px; letter-spacing:.08em; }
   .survival-record { margin-top:14px; padding:12px 14px; border:1px solid rgba(64,88,115,.4); border-radius:10px; color:var(--muted); background:rgba(5,13,21,.58); line-height:1.55; }
-  @media(max-width:760px){ .title-panel{left:3%;top:4%;bottom:4%;width:48%;min-width:0;padding:5% 4%;border-radius:28px 50px 36px 28px}.game-title{font-size:6.5vw}.menu-btn{height:9vh;font-size:clamp(13px,2.7vw,20px)}.setup-panel{left:5%;top:7%;bottom:7%;width:65%;padding:4.5%}.utility{top:2%;right:2%}.utility button{height:34px;min-height:34px}.modal{padding:24px}.pause-modal{overflow:auto}.pause-guide{grid-template-columns:1fr}.pause-modal .modal-actions{grid-template-columns:1fr 1fr} }
+  @media(max-width:760px){ .title-panel{left:3%;top:4%;bottom:4%;width:48%;min-width:0;padding:4% 4% 3%;border-radius:28px 50px 36px 28px}.game-title{font-size:6.2vw}.menu-btn{height:clamp(38px,7vh,50px);font-size:clamp(13px,2.7vw,20px)}.setup-panel{left:5%;top:7%;bottom:7%;width:65%;padding:4.5%}.utility{top:2%;right:2%}.utility button{height:34px;min-height:34px}.modal{padding:24px}.pause-modal{overflow:auto}.pause-guide{grid-template-columns:1fr}.pause-modal .modal-actions{grid-template-columns:1fr 1fr} }
   @media(max-height:500px){ .title-panel{top:3%;bottom:3%;padding:3.2% 4% 2%}.game-title{font-size:38px;margin-bottom:2%}.title-marbles{display:none}.title-difficulty{margin:0 2% 1%;gap:8px}.title-difficulty select{min-height:30px}.menu{gap:0}.menu-btn{height:38px;font-size:18px}.setup-panel{top:4%;bottom:4%;padding:3.5% 4%}.setup-panel h2{font-size:30px}.setup-panel p{margin-bottom:12px}.field{margin-top:9px}.setup-actions{margin:9px 0}.utility{top:2%}.utility button{height:34px;min-height:34px}.modal{max-height:94%;padding:14px 22px}.modal h2{margin-bottom:7px;font-size:25px}.pause-modal{width:min(810px,96%);max-height:96%;padding:10px 14px}.pause-modal h2{margin-bottom:5px;font-size:22px}.pause-guide{gap:10px;margin-bottom:7px}.pause-guide h3{margin-bottom:3px;font-size:11px}.pause-guide-note{min-height:0;margin-bottom:4px;font-size:9px;line-height:1.2}.pause-control-list,.pause-special-list{gap:3px}.pause-control-item,.pause-special-item{min-height:28px;padding:3px 5px;border-radius:6px}.pause-control-item{grid-template-columns:4.4em 1fr;gap:5px}.pause-control-item kbd{min-height:20px;padding:2px 4px;font-size:8px}.pause-control-item span{font-size:9px;line-height:1.15}.pause-special-item{grid-template-columns:25px 1fr;gap:5px}.pause-special-icon{width:23px;height:23px}.pause-special-icon svg{width:17px;height:17px}.pause-special-copy strong{font-size:9px}.pause-special-copy small{font-size:8px;line-height:1.1}.result-breakdown{margin:6px 0 8px}.result-row{padding:2px 0}.result-row.total{margin-top:3px;padding-top:5px}.result-record{line-height:1.35}.modal-actions{grid-template-columns:repeat(3,1fr);gap:7px}.modal-actions button{min-height:32px}.pause-modal .modal-actions{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}.pause-modal .modal-actions button{min-height:28px;padding:4px 5px;font-size:10px} }
   @media(prefers-reduced-motion:reduce){ *{transition-duration:.01ms!important} }
 </style>
@@ -158,6 +166,7 @@
           <button class="menu-btn" id="newGameBtn" data-i18n="newGame">NEW GAME</button>
           <button class="menu-btn" id="continueBtn">CONTINUE</button>
           <button class="menu-btn" id="survivalModeBtn" data-i18n="survival">SURVIVAL</button>
+          <button class="menu-btn" id="randomModeBtn" data-i18n="randomStage">RANDOM STAGE</button>
           <button class="menu-btn" id="highScoresModeBtn" data-i18n="highScores">HIGH SCORES</button>
           <button class="menu-btn" id="stageTestModeBtn" data-i18n="stageTest">STAGE TEST</button>
           <button class="menu-btn" id="settingsModeBtn" data-i18n="settings">SETTINGS</button>
@@ -289,10 +298,18 @@
         <button id="resultTitleBtn" data-i18n="title">TITLE</button>
       </div></div>
     </section>
+    <div class="random-generating-overlay" id="randomGeneratingOverlay" role="dialog" aria-modal="true" aria-labelledby="randomGeneratingTitle" aria-describedby="randomGeneratingDetail" hidden>
+      <div class="random-generating-dialog">
+        <h2 id="randomGeneratingTitle">Generating…</h2>
+        <p class="random-generating-detail" id="randomGeneratingDetail">Attempt 1/2</p>
+        <div class="random-generating-bar" aria-hidden="true"></div>
+      </div>
+    </div>
     <div class="toast" id="toast" role="status"></div>
   </div>
 </div>
 <script src="assets/data/main_campaign.js"></script>
+<script src="assets/data/stage_generator_core.js"></script>
 <script>
 (() => {
   'use strict';
@@ -342,6 +359,9 @@
   const stageSelectBtn = document.getElementById('stageSelectBtn');
   const resultReplayBtn = document.getElementById('resultReplayBtn');
   const resultSelectBtn = document.getElementById('resultSelectBtn');
+  const randomGeneratingOverlay = document.getElementById('randomGeneratingOverlay');
+  const randomGeneratingTitle = document.getElementById('randomGeneratingTitle');
+  const randomGeneratingDetail = document.getElementById('randomGeneratingDetail');
 
   const W = canvas.width, H = canvas.height;
   // Deliberately large, tightly packed marbles. The track should feel crowded.
@@ -522,19 +542,20 @@
   let mainCampaignSaveId=mainCampaignId,isCustomMainCampaign=false,loadedCampaignCandidate=null;
   let mainCampaignEntries=[];
   let activeGameMode='stage-test';
+  let randomGenerationDebug=null,currentRandomStage=null,randomDebugVisible=false;
   let campaignResultLevelIndex=-1,campaignResultNextIndex=-1,campaignResultWasHighScore=false;
   let survivalState=null,survivalSelectedIndex=0,survivalResultWasRecord=false;
   let saveData=loadSaveData();
   let activeCampaignDifficulty=normalizeCampaignDifficulty(saveData.selectedCampaignDifficulty);
 
   const UI_TEXT={
-    en:{campaign:'CAMPAIGN',difficulty:'DIFFICULTY',newGame:'NEW GAME',continueGame:'CONTINUE',highScores:'HIGH SCORES',campaignHighScores:'Campaign stage records by difficulty. Scores are recorded after a stage clear.',survival:'SURVIVAL',survivalHighScores:'Longest survival time by stage. Score breaks a time tie.',survivalDescription:'Choose a stage cleared in the NORMAL campaign. Pressure rises every 15–24 seconds by tier; items 9 and 18 add a color when possible.',survivalNoRecord:'NO RECORD',survivalTime:'SURVIVAL TIME',survivalBest:'BEST',stageTest:'STAGE TEST',settings:'SETTINGS',loadData:'LOAD DATA',builtIn:'BUILT-IN CAMPAIGN',useAsMainCampaign:'USE AS MAIN CAMPAIGN',restoreBuiltInCampaign:'RESTORE BUILT-IN CAMPAIGN',saveData:'SAVE DATA',saveDataHelp:'Export or merge campaign progress, high scores, and Survival records. Audio settings are not included.',exportSaveData:'EXPORT SAVE',importSaveData:'IMPORT SAVE',mergeSaveConfirm:'Merge this save with current records? Higher progress and records will be kept.',saveExported:'Save data exported',saveImported:'Save data imported',play:'PLAY',back:'← BACK',language:'LANGUAGE',sound:'AUDIO',masterVolume:'MASTER VOLUME',bgmVolume:'BGM VOLUME',sfxVolume:'SE VOLUME',paused:'PAUSED',pauseControls:'CONTROLS',pauseControlsNote:'Mouse and touch controls are both supported.',pauseMouse:'MOUSE',pauseMouseHelp:'Move to aim · Left click to fire',pauseSwapKey:'RIGHT CLICK',pauseSwapHelp:'Swap CURRENT and NEXT',pauseTouch:'TOUCH',pauseTouchHelp:'Tap a target to fire · Tap the launcher to swap',pausePauseHelp:'Pause or resume',pausePowerUps:'POWER UPS',pauseSpecialRule:'Activate a marked marble by removing it in a color match.',pauseBombHelp:'Clears nearby marbles',pauseWipeHelp:'Clears that color from the lane',pauseBackHelp:'Moves the chain toward SPAWN',pauseSlowHelp:'Slows chain movement',pauseShotFastHelp:'Speeds up fired marbles',pausePowerDowns:'POWER DOWNS',pausePowerDownNote:'Pink marks are harmful effects.',pauseDriveFastHelp:'Speeds up chain movement',pauseShotSlowHelp:'Slows fired marbles',resume:'RESUME',restart:'RESTART',stageSelect:'STAGE SELECT',title:'TITLE',replay:'PLAY AGAIN',retry:'RETRY',nextStage:'NEXT STAGE',newHighScore:'NEW HIGH SCORE',campaignComplete:'CAMPAIGN COMPLETE',stage:'STAGE',score:'SCORE',campaignDescription:'Play the active campaign in order. Progress and each stage high score are saved separately by difficulty.',stageTestDescription:'Choose any stage from the active campaign, or load a StageSpec, bundle, evaluated bundle, or v5 campaign for testing. Each play uses a new random run.'},
-    ja:{campaign:'キャンペーン',difficulty:'難易度',newGame:'ニューゲーム',continueGame:'コンティニュー',highScores:'ハイスコア',campaignHighScores:'難易度別のメインゲーム面別記録です。スコアはステージクリア時に記録されます。',survival:'サバイバル',survivalHighScores:'ステージ別の最長生存時間です。同時間の場合はスコアで順位を決めます。',survivalDescription:'NORMALキャンペーンでクリアしたステージを選びます。ティア別に15～24秒ごとに圧力が上がり、9・18個目は可能なら色数が増えます。',survivalNoRecord:'記録なし',survivalTime:'生存時間',survivalBest:'ベスト',stageTest:'ステージテスト',settings:'設定',loadData:'データを読み込む',builtIn:'内蔵キャンペーン',useAsMainCampaign:'メインキャンペーンとして使用',restoreBuiltInCampaign:'内蔵キャンペーンに戻す',saveData:'セーブデータ',saveDataHelp:'キャンペーン進行、ハイスコア、サバイバル記録を書き出し、または現在の記録へ統合します。音量設定は含みません。',exportSaveData:'セーブを書き出す',importSaveData:'セーブを読み込む',mergeSaveConfirm:'このセーブを現在の記録へ統合しますか？進行度と記録は高い方を残します。',saveExported:'セーブデータを書き出しました',saveImported:'セーブデータを読み込みました',play:'プレイ',back:'← 戻る',language:'言語',sound:'音声',masterVolume:'マスター音量',bgmVolume:'BGM音量',sfxVolume:'SE音量',paused:'一時停止',pauseControls:'操作方法',pauseControlsNote:'マウス操作とタッチ操作の両方に対応しています。',pauseMouse:'マウス',pauseMouseHelp:'移動で照準 · 左クリックで発射',pauseSwapKey:'右クリック',pauseSwapHelp:'CURRENTとNEXTを交換',pauseTouch:'タッチ',pauseTouchHelp:'狙う場所をタップで発射 · 砲台タップで交換',pausePauseHelp:'一時停止／再開',pausePowerUps:'パワーアップ',pauseSpecialRule:'印の付いたマーブルを色マッチで消すと発動します。',pauseBombHelp:'周囲のマーブルをまとめて消す',pauseWipeHelp:'同じ色をレーン全体から消す',pauseBackHelp:'列をSPAWN方向へ戻す',pauseSlowHelp:'列の進行を遅くする',pauseShotFastHelp:'射出マーブルを速くする',pausePowerDowns:'パワーダウン',pausePowerDownNote:'ピンク色の印は不利な効果です。',pauseDriveFastHelp:'列の進行が速くなる',pauseShotSlowHelp:'射出マーブルが遅くなる',resume:'再開',restart:'やり直す',stageSelect:'ステージ選択',title:'タイトル',replay:'もう一度',retry:'リトライ',nextStage:'次のステージ',newHighScore:'ハイスコア更新',campaignComplete:'キャンペーンクリア',stage:'ステージ',score:'スコア',campaignDescription:'現在のキャンペーンを順番に攻略します。進行状況と面別ハイスコアは難易度ごとに保存されます。',stageTestDescription:'現在のキャンペーンから任意のステージを選ぶか、StageSpec、各種バンドル、v5キャンペーンを読み込んでテストできます。プレイごとに新しい乱数を使います。'}
+    en:{campaign:'CAMPAIGN',difficulty:'DIFFICULTY',newGame:'NEW GAME',continueGame:'CONTINUE',highScores:'HIGH SCORES',campaignHighScores:'Campaign stage records by difficulty. Scores are recorded after a stage clear.',survival:'SURVIVAL',randomStage:'RANDOM STAGE',nextRandom:'NEXT RANDOM',newRandom:'NEW RANDOM',retrySame:'RETRY SAME',survivalHighScores:'Longest survival time by stage. Score breaks a time tie.',survivalDescription:'Choose a stage cleared in the NORMAL campaign. Pressure rises every 15–24 seconds by tier; items 9 and 18 add a color when possible.',survivalNoRecord:'NO RECORD',survivalTime:'SURVIVAL TIME',survivalBest:'BEST',stageTest:'STAGE TEST',settings:'SETTINGS',loadData:'LOAD DATA',builtIn:'BUILT-IN CAMPAIGN',useAsMainCampaign:'USE AS MAIN CAMPAIGN',restoreBuiltInCampaign:'RESTORE BUILT-IN CAMPAIGN',saveData:'SAVE DATA',saveDataHelp:'Export or merge campaign progress, high scores, and Survival records. Audio settings are not included.',exportSaveData:'EXPORT SAVE',importSaveData:'IMPORT SAVE',mergeSaveConfirm:'Merge this save with current records? Higher progress and records will be kept.',saveExported:'Save data exported',saveImported:'Save data imported',play:'PLAY',back:'← BACK',language:'LANGUAGE',sound:'AUDIO',masterVolume:'MASTER VOLUME',bgmVolume:'BGM VOLUME',sfxVolume:'SE VOLUME',paused:'PAUSED',pauseControls:'CONTROLS',pauseControlsNote:'Mouse and touch controls are both supported.',pauseMouse:'MOUSE',pauseMouseHelp:'Move to aim · Left click to fire',pauseSwapKey:'RIGHT CLICK',pauseSwapHelp:'Swap CURRENT and NEXT',pauseTouch:'TOUCH',pauseTouchHelp:'Tap a target to fire · Tap the launcher to swap',pausePauseHelp:'Pause or resume',pausePowerUps:'POWER UPS',pauseSpecialRule:'Activate a marked marble by removing it in a color match.',pauseBombHelp:'Clears nearby marbles',pauseWipeHelp:'Clears that color from the lane',pauseBackHelp:'Moves the chain toward SPAWN',pauseSlowHelp:'Slows chain movement',pauseShotFastHelp:'Speeds up fired marbles',pausePowerDowns:'POWER DOWNS',pausePowerDownNote:'Pink marks are harmful effects.',pauseDriveFastHelp:'Speeds up chain movement',pauseShotSlowHelp:'Slows fired marbles',resume:'RESUME',restart:'RESTART',stageSelect:'STAGE SELECT',title:'TITLE',replay:'PLAY AGAIN',retry:'RETRY',nextStage:'NEXT STAGE',newHighScore:'NEW HIGH SCORE',campaignComplete:'CAMPAIGN COMPLETE',stage:'STAGE',score:'SCORE',campaignDescription:'Play the active campaign in order. Progress and each stage high score are saved separately by difficulty.',stageTestDescription:'Choose any stage from the active campaign, or load a StageSpec, bundle, evaluated bundle, or v5 campaign for testing. Each play uses a new random run.'},
+    ja:{campaign:'キャンペーン',difficulty:'難易度',newGame:'ニューゲーム',continueGame:'コンティニュー',highScores:'ハイスコア',campaignHighScores:'難易度別のメインゲーム面別記録です。スコアはステージクリア時に記録されます。',survival:'サバイバル',randomStage:'ランダムステージ',nextRandom:'次のランダム',newRandom:'新しく生成',retrySame:'同じ面を再挑戦',survivalHighScores:'ステージ別の最長生存時間です。同時間の場合はスコアで順位を決めます。',survivalDescription:'NORMALキャンペーンでクリアしたステージを選びます。ティア別に15～24秒ごとに圧力が上がり、9・18個目は可能なら色数が増えます。',survivalNoRecord:'記録なし',survivalTime:'生存時間',survivalBest:'ベスト',stageTest:'ステージテスト',settings:'設定',loadData:'データを読み込む',builtIn:'内蔵キャンペーン',useAsMainCampaign:'メインキャンペーンとして使用',restoreBuiltInCampaign:'内蔵キャンペーンに戻す',saveData:'セーブデータ',saveDataHelp:'キャンペーン進行、ハイスコア、サバイバル記録を書き出し、または現在の記録へ統合します。音量設定は含みません。',exportSaveData:'セーブを書き出す',importSaveData:'セーブを読み込む',mergeSaveConfirm:'このセーブを現在の記録へ統合しますか？進行度と記録は高い方を残します。',saveExported:'セーブデータを書き出しました',saveImported:'セーブデータを読み込みました',play:'プレイ',back:'← 戻る',language:'言語',sound:'音声',masterVolume:'マスター音量',bgmVolume:'BGM音量',sfxVolume:'SE音量',paused:'一時停止',pauseControls:'操作方法',pauseControlsNote:'マウス操作とタッチ操作の両方に対応しています。',pauseMouse:'マウス',pauseMouseHelp:'移動で照準 · 左クリックで発射',pauseSwapKey:'右クリック',pauseSwapHelp:'CURRENTとNEXTを交換',pauseTouch:'タッチ',pauseTouchHelp:'狙う場所をタップで発射 · 砲台タップで交換',pausePauseHelp:'一時停止／再開',pausePowerUps:'パワーアップ',pauseSpecialRule:'印の付いたマーブルを色マッチで消すと発動します。',pauseBombHelp:'周囲のマーブルをまとめて消す',pauseWipeHelp:'同じ色をレーン全体から消す',pauseBackHelp:'列をSPAWN方向へ戻す',pauseSlowHelp:'列の進行を遅くする',pauseShotFastHelp:'射出マーブルを速くする',pausePowerDowns:'パワーダウン',pausePowerDownNote:'ピンク色の印は不利な効果です。',pauseDriveFastHelp:'列の進行が速くなる',pauseShotSlowHelp:'射出マーブルが遅くなる',resume:'再開',restart:'やり直す',stageSelect:'ステージ選択',title:'タイトル',replay:'もう一度',retry:'リトライ',nextStage:'次のステージ',newHighScore:'ハイスコア更新',campaignComplete:'キャンペーンクリア',stage:'ステージ',score:'スコア',campaignDescription:'現在のキャンペーンを順番に攻略します。進行状況と面別ハイスコアは難易度ごとに保存されます。',stageTestDescription:'現在のキャンペーンから任意のステージを選ぶか、StageSpec、各種バンドル、v5キャンペーンを読み込んでテストできます。プレイごとに新しい乱数を使います。'}
   };
 
   function normalizeCampaignDifficulty(value){return Object.hasOwn(CAMPAIGN_DIFFICULTIES,value)?value:'NORMAL'}
   function difficultyLabel(value=activeCampaignDifficulty){return value==='VERY_HARD'?'VERY HARD':value}
-  function difficultyConfig(){return CAMPAIGN_DIFFICULTIES[activeGameMode==='campaign'?activeCampaignDifficulty:'NORMAL']}
+  function difficultyConfig(){return CAMPAIGN_DIFFICULTIES[(activeGameMode==='campaign'||activeGameMode==='random')?activeCampaignDifficulty:'NORMAL']}
   function defaultSaveData(){return{saveVersion:SAVE_VERSION,selectedCampaignDifficulty:'NORMAL',campaigns:{},survival:{records:{}}}}
   function loadSaveData(){
     try{
@@ -785,11 +806,117 @@
     else if(screen==='highscores')highScoresScreen.classList.add('active');
     else if(screen==='paused')pauseScreen.classList.add('active');
     else if(screen==='result')resultScreen.classList.add('active');
-    if(screen==='paused')stageSelectBtn.hidden=activeGameMode==='campaign';
+    if(screen==='paused')stageSelectBtn.hidden=activeGameMode==='campaign'||activeGameMode==='random';
     if(openingScreen())startOpeningMusic(false);else stopOpeningMusic(false);
     lastTime=performance.now();
   }
   function randomRunSeed(){return((Date.now()^Math.floor(Math.random()*0xffffffff))>>>0)||1}
+  const RANDOM_STAGE_MAX_ATTEMPTS=2;
+  const RANDOM_STAGE_GENERATOR_SETTINGS={simplifyStrength:72,obstacleCount:0,targetLength:5200,lengthTolerance:1000,minScreenReach:.72,maxDensifyDepth:5,maxSimplifyStrength:72,maxBeamWidth:2,maxBeamChildren:3,trialsPerSpan:4,spanLimit:10,disableFallback:true};
+  const RANDOM_STAGE_RELAXED_SETTINGS={lengthTolerance:1600,minScreenReach:.62,minFinalLength:2800};
+  function randomStageCandidateScore(stage){
+    const generated=stage.full.best,m=stage.metrics,target=stage.generationOptions.targetLength;
+    const lengthScore=Math.max(0,1-Math.abs(generated.length-target)/Math.max(1,target));
+    return .30*clamp(m.score/100,0,1)+.24*clamp(generated.extent.min/.90,0,1)+.18*lengthScore+.16*clamp(m.cov/.78,0,1)+.08*clamp(m.sig/14,0,1)+.04*clamp(stage.crossTarget/2,0,1);
+  }
+  function randomStageMeetsRelaxed(stage,candidateScore){
+    const generated=stage.full.best,opt=stage.generationOptions,relaxed=RANDOM_STAGE_RELAXED_SETTINGS;
+    return randomStagePassesQuality(stage,candidateScore)&&Math.abs(generated.length-opt.targetLength)<=relaxed.lengthTolerance&&generated.extent.min>=relaxed.minScreenReach&&stage.finalTrack.length>=relaxed.minFinalLength;
+  }
+  function randomStageQualityPass(depth,quality,crossings=0){
+    return depth>=1&&(quality>=82||(depth>=2&&quality>=78)||(crossings>0&&quality>=85));
+  }
+  function randomStagePassesQuality(stage,candidateScore){
+    return randomStageQualityPass(+stage.full?.depth||0,(+candidateScore||0)*100,stage.finalCross?.length||0);
+  }
+  function randomStageBuiltInFallback(seed,tier,rng,attempts,rejectionReasons,started,counts={}){
+    const levels=Array.isArray(builtInCampaignRoot?.levels)?builtInCampaignRoot.levels.filter(level=>+level.campaignLevel>=21&&+level.campaignLevel<=100):[];
+    if(!levels.length)throw new Error('Built-in campaign fallback stages are unavailable.');
+    const level=levels[Math.floor(rng()*levels.length)],spec=level.stage;
+    const track=buildDenseTrack(spec.geometry.path),m=randomStageComplexity(track);
+    const debug={seed,tier,fallbackStageTier:+level.tier||null,family:'BUILT-IN CAMPAIGN',familyKey:'built-in',attempts,retries:Math.max(0,attempts-1),validCandidates:counts.validCandidates||0,strictCandidates:counts.strictCandidates||0,qualityRejected:counts.qualityRejected||0,hardRejected:counts.hardRejected||0,rejectionReasons,status:'built-in-fallback',acceptedEarly:false,elapsedMs:performance.now()-started,targetLength:spec.geometry.trackLength,quality:0,trackLength:track.length,generatedLength:track.length,reachX:0,reachY:0,coverage:0,meanderScore:0,significantTurns:m.significantTurns,totalTurn:m.totalTurn,tortuosity:m.tortuosity,crossings:spec.geometry.crossings?.length||0,topology:'BUILT-IN',densifyDepth:0,beamCandidates:0,generatorStop:'built-in fallback',verticalFlip:!!spec.source?.verticalFlip,fallbackLevel:level.campaignLevel,maxAttempts:RANDOM_STAGE_MAX_ATTEMPTS};
+    return{spec,gameplay:builtInRandomTierGameplay(tier,seed),debug};
+  }
+  function randomStageComplexity(t){
+    const step=28,angles=[];for(let s=0;s<=t.length;s+=step){const a=randomStageTrackPos(t,Math.max(0,s-8)),b=randomStageTrackPos(t,Math.min(t.length,s+8));angles.push(Math.atan2(b.y-a.y,b.x-a.x))}
+    const diff=(a,b)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return d};
+    let totalTurn=0,significantTurns=0,hot=false,lastTurnS=-1e9;
+    for(let i=1;i<angles.length;i++)totalTurn+=Math.abs(diff(angles[i-1],angles[i]))*180/Math.PI;
+    const window=Math.max(2,Math.round(70/step));
+    for(let i=window;i<angles.length-window;i++){const amount=Math.abs(diff(angles[i-window],angles[i+window]))*180/Math.PI,isHot=amount>=38;if(isHot&&!hot&&i*step-lastTurnS>=82){significantTurns++;lastTurnS=i*step}hot=isHot}
+    const start=t.pts[0],end=t.pts.at(-1),endpointDistance=Math.hypot(start.x-end.x,start.y-end.y),tortuosity=t.length/Math.max(1,endpointDistance);
+    return{totalTurn,significantTurns,tortuosity};
+  }
+  function randomStageTrackPos(t,s){
+    s=clamp(s,0,t.length);let lo=0,hi=t.cum.length-1;
+    while(lo<hi){const mid=(lo+hi)>>1;if(t.cum[mid]<s)lo=mid+1;else hi=mid}
+    const i=Math.max(1,lo),a=t.pts[i-1],b=t.pts[i],span=t.cum[i]-t.cum[i-1]||1,q=(s-t.cum[i-1])/span;
+    return{x:a.x+(b.x-a.x)*q,y:a.y+(b.y-a.y)*q};
+  }
+  function builtInRandomTierGameplay(tier,seed){
+    const profiles=Array.isArray(builtInCampaignRoot?.profiles)?builtInCampaignRoot.profiles:[];
+    const id=`campaign-tier-${String(tier).padStart(2,'0')}`;
+    const profile=profiles.find(p=>p.profileId===id)||profiles[Math.max(0,Math.min(profiles.length-1,tier-1))];
+    if(!profile)throw new Error('Built-in tier profiles are unavailable.');
+    return{...profile,rngSeed:seed,queueProfile:{...(profile.queueProfile||{}),runLengthWeights:[...(profile.queueProfile?.runLengthWeights||[])]},waveProfile:{...(profile.waveProfile||{})}};
+  }
+  function randomGenerationYield(){return new Promise(resolve=>setTimeout(resolve,0))}
+  function showRandomGenerationProgress({attempt=1,family='',tier=null}={}){
+    randomGeneratingTitle.textContent=uiLanguage==='ja'?'生成中…':'Generating…';
+    const attemptText=uiLanguage==='ja'?`試行 ${attempt}/${RANDOM_STAGE_MAX_ATTEMPTS}`:`Attempt ${attempt}/${RANDOM_STAGE_MAX_ATTEMPTS}`;
+    const tierText=tier==null?'':` · ${uiLanguage==='ja'?'ティア':'Tier'} ${tier}`;
+    randomGeneratingDetail.textContent=`${attemptText}${family?` · ${family}`:''}${tierText}`;
+    randomGeneratingOverlay.hidden=false;
+  }
+  function hideRandomGenerationProgress(){randomGeneratingOverlay.hidden=true}
+  async function generateRandomStage(seed=randomRunSeed(),onProgress=null){
+    seed=(Math.floor(+seed)>>>0)||1;
+    const core=window.MarbleStageGeneratorCoreV19;
+    if(!core)throw new Error('Marble Stage Generator Core v0.19 is unavailable.');
+    const started=performance.now(),rng=mulberry32(seed),tier=3+Math.floor(rng()*5),types=core.TYPES;
+    let bestValid=null,bestRelaxed=null,attempts=0,strictCandidates=0,validCandidates=0,qualityRejected=0,hardRejected=0,acceptedEarly=false;const rejectionReasons={};
+    for(;attempts<RANDOM_STAGE_MAX_ATTEMPTS;attempts++){
+      const candidateSeed=((seed+Math.imul(attempts+1,0x9e3779b1))>>>0)||1;
+      const type=types[Math.floor(rng()*types.length)],verticalFlip=core.resolveVerticalFlip(candidateSeed,'random50',attempts);
+      if(onProgress){onProgress({attempt:attempts+1,family:core.LABEL[type]||type,tier});await randomGenerationYield()}
+      const stage=core.createStage(candidateSeed,type,{...RANDOM_STAGE_GENERATOR_SETTINGS,verticalFlip,verticalFlipMode:'random50'});
+      if(stage.failed){hardRejected++;const reason=String(stage.why||'generation');rejectionReasons[reason]=(rejectionReasons[reason]||0)+1;continue}
+      validCandidates++;
+      const score=randomStageCandidateScore(stage),entry={stage,score,candidateSeed};
+      if(!bestValid||score>bestValid.score)bestValid=entry;
+      const qualityPass=randomStagePassesQuality(stage,score);
+      if(!qualityPass){qualityRejected++;rejectionReasons['shape quality']=(rejectionReasons['shape quality']||0)+1}
+      const strict=qualityPass&&stage.full.lengthTargetMet&&stage.full.screenReachMet;
+      if(strict){strictCandidates++;bestRelaxed=entry;acceptedEarly=true;attempts++;break}
+      if(randomStageMeetsRelaxed(stage,score)&&(!bestRelaxed||score>bestRelaxed.score))bestRelaxed=entry;
+    }
+    if(!bestRelaxed){if(validCandidates>qualityRejected)rejectionReasons['length/reach requirements']=(rejectionReasons['length/reach requirements']||0)+(validCandidates-qualityRejected);return randomStageBuiltInFallback(seed,tier,rng,attempts,rejectionReasons,started,{validCandidates,strictCandidates,qualityRejected,hardRejected})}
+    const chosen=bestRelaxed,stage=chosen.stage,spec=core.stageSpecObject(stage),m=stage.metrics,generated=stage.full.best;
+    spec.stageId=`random-${seed}-${stage.type}-${chosen.candidateSeed}`;
+    spec.source={...spec.source,generatorMode:'embedded-random',randomMasterSeed:seed,adoption:acceptedEarly?'generator-requirements':'relaxed-requirements'};
+    const status=acceptedEarly?'requirements-met':'relaxed-best';
+    const debug={seed,tier,fallbackStageTier:null,family:core.LABEL[stage.type]||stage.type,familyKey:stage.type,attempts,retries:Math.max(0,attempts-1),validCandidates,strictCandidates,qualityRejected,hardRejected,rejectionReasons,status,acceptedEarly,elapsedMs:performance.now()-started,targetLength:stage.generationOptions.targetLength,quality:chosen.score,trackLength:stage.finalTrack.length,generatedLength:generated.length,reachX:generated.extent.x,reachY:generated.extent.y,coverage:m.cov,meanderScore:m.score,significantTurns:m.sig,totalTurn:m.turn,tortuosity:m.stretch,crossings:stage.finalCross.length,topology:core.crossingTopology(stage.finalCross),densifyDepth:stage.full.depth,beamCandidates:stage.full.expanded,generatorStop:stage.full.stop,verticalFlip:stage.verticalFlip,fallbackLevel:null,maxAttempts:RANDOM_STAGE_MAX_ATTEMPTS};
+    return{spec,gameplay:builtInRandomTierGameplay(tier,seed),debug};
+  }
+  function applyRandomStage(generated){
+    activeGameMode='random';randomGenerationDebug=generated.debug;currentRandomStage=generated;
+    loadedStageEntries=[];loadedStageIndex=-1;loadedContainerName='Random Stage';
+    const normalized=validateAndNormalizeStageSpec(generated.spec,generated.gameplay);
+    applyLoadedStage(normalized,generated.spec.stageId,{random:true,tier:generated.debug.tier});
+    ensureAudio();paused=false;setShellScreen('playing');startStageMusic(true);
+  }
+  let randomGenerationBusy=false;
+  async function startRandomStage(seed=randomRunSeed()){
+    if(randomGenerationBusy)return;
+    randomGenerationBusy=true;showRandomGenerationProgress();
+    try{await randomGenerationYield();applyRandomStage(await generateRandomStage(seed,showRandomGenerationProgress))}
+    catch(error){console.error(error);alert(`${uiLanguage==='ja'?'ランダムステージ生成に失敗しました':'Random stage generation failed'}:\n${error.message||error}`)}
+    finally{hideRandomGenerationProgress();randomGenerationBusy=false}
+  }
+  function retryCurrentRandomStage(){
+    if(!currentRandomStage){startRandomStage();return}
+    activeGameMode='random';reset(currentRandomStage.debug.seed);paused=false;setShellScreen('playing');startStageMusic(true);
+  }
   function useActiveCampaignForStageTest(index=0){
     if(!mainCampaignEntries.length)return false;
     loadedStageEntries=mainCampaignEntries;loadedStageIndex=Math.max(0,Math.min(mainCampaignEntries.length-1,Math.floor(index)));loadedContainerName=mainCampaignRoot?.title||mainCampaignId;loadedCampaignCandidate=null;
@@ -814,6 +941,7 @@
     const palette=((Math.floor(Number(index)||0)%3)+3)%3;playfield.dataset.palette=String(palette);return palette;
   }
   function stagePaletteIndex(){
+    if(activeGameMode==='random'&&randomGenerationDebug)return randomGenerationDebug.seed%3;
     const level=Number.isFinite(+activeStageMeta?.campaignLevel)?+activeStageMeta.campaignLevel:(loadedStageIndex>=0?loadedStageIndex+1:1);
     return Math.max(0,level-1)%3;
   }
@@ -941,7 +1069,7 @@
   };
   window.__marblePopperWaveTest={
     setScenario:scenario=>{
-      stopWaveRumble();spawnQueue=[...(scenario.spawnQueue||[])];
+      resetWaveRumbleMotion();spawnQueue=[...(scenario.spawnQueue||[])];
       segments=(scenario.segments||[]).map(seg=>({marbles:(seg.marbles||[]).map(m=>({special:null,visualOffset:0,visualVelocity:0,color:0,...m})),driven:!!seg.driven,attracting:!!seg.attracting,attractSpeed:seg.attractSpeed||0,attractShotId:seg.attractShotId||0}));
       const ids=segments.flatMap(seg=>seg.marbles.map(m=>m.id));nextMarbleId=Math.max(1,...ids)+1;
       waveState={phase:scenario.phase||'deploying',waveIndex:scenario.waveIndex||1,totalWaves:Infinity,remaining:scenario.remaining||0,timer:scenario.timer||0,connected:!!scenario.connected,rumbleStarted:!!scenario.rumbleStarted,preExistingIds:new Set(scenario.preExistingIds||[])};
@@ -1009,9 +1137,10 @@
       ['WAVE CLEAR BONUS',b.waveClearBonus,'Bonus for clearing the board before the next WAVE. More remaining time scores more.'],
       ['SAFETY BONUS',b.safetyBonus,'Clear bonus based on the safe track distance from the final cleared marble to BASE.']
     ];
-    const difficultyText=activeGameMode==='campaign'?` · ${ja?'難易度':'DIFFICULTY'} ${difficultyLabel()}`:'';
+    const difficultyText=(activeGameMode==='campaign'||activeGameMode==='random')?` · ${ja?'難易度':'DIFFICULTY'} ${difficultyLabel()}`:'';
     const survivalText=activeGameMode==='survival'?`<div class="result-row total"><span>${t.survivalTime}</span><strong>${formatDuration(survivalState?.elapsed)}</strong></div>`:'';
-    document.getElementById('resultStats').innerHTML=`<div class="result-breakdown">${rows.map(([k,v,tip])=>`<div class="result-row score-help" tabindex="0" data-tooltip="${tip}" aria-label="${k}: ${v.toLocaleString()}. ${tip}"><span>${k}</span><strong>${v.toLocaleString()}</strong></div>`).join('')}${survivalText}<div class="result-row total"><span>${ja?'合計':'TOTAL'}</span><strong>${scoreValue().toLocaleString()}</strong></div></div><div class="result-record">${ja?'発射':'SHOTS'} ${shots} · ${ja?'成功率':'SUCCESS'} ${shots?Math.round(scoreState.successfulShots/shots*100):0}% · ${ja?'最大ストリーク':'MAX STREAK'} ${scoreState.maxStreak} · ${ja?'最大磁力チェイン':'MAX CHAIN'} ${maxChain} · ${ja?'ギャップショット':'GAP SHOTS'} ${scoreState.gapShots}${difficultyText}</div>`;
+    const randomText=activeGameMode==='random'&&randomGenerationDebug&&randomDebugVisible?`<div class="result-record">RANDOM DEBUG · ${randomGenerationDebug.status.toUpperCase()} · TIER ${randomGenerationDebug.tier} · SEED ${randomGenerationDebug.seed} · ${randomGenerationDebug.attempts}/${randomGenerationDebug.maxAttempts} ATTEMPTS · ${randomGenerationDebug.significantTurns} TURNS · ${randomGenerationDebug.elapsedMs.toFixed(2)} ms</div>`:'';
+    document.getElementById('resultStats').innerHTML=`<div class="result-breakdown">${rows.map(([k,v,tip])=>`<div class="result-row score-help" tabindex="0" data-tooltip="${tip}" aria-label="${k}: ${v.toLocaleString()}. ${tip}"><span>${k}</span><strong>${v.toLocaleString()}</strong></div>`).join('')}${survivalText}<div class="result-row total"><span>${ja?'合計':'TOTAL'}</span><strong>${scoreValue().toLocaleString()}</strong></div></div><div class="result-record">${ja?'発射':'SHOTS'} ${shots} · ${ja?'成功率':'SUCCESS'} ${shots?Math.round(scoreState.successfulShots/shots*100):0}% · ${ja?'最大ストリーク':'MAX STREAK'} ${scoreState.maxStreak} · ${ja?'最大磁力チェイン':'MAX CHAIN'} ${maxChain} · ${ja?'ギャップショット':'GAP SHOTS'} ${scoreState.gapShots}${difficultyText}</div>${randomText}`;
     configureResultActions();setShellScreen('result');if(cleared)startStageClearMusic();else startGameOverMusic();
   }
 
@@ -1036,7 +1165,7 @@
   stageClearBgm.preload='auto';stageClearBgm.loop=true;
   gameOverBgm.preload='auto';gameOverBgm.loop=true;
   let audioSettings=loadAudioSettings();
-  let audioCtx=null, masterGain=null, sfxGain=null, sfxLimiter=null, noiseBuffer=null,waveRumble=null;
+  let audioCtx=null, masterGain=null, sfxGain=null, sfxLimiter=null, noiseBuffer=null,waveRumble=null,waveRumblePositions=new Map();
   let soundEnabled=!audioSettings.muted;
   let musicSessionActive=false,openingMusicActive=false,panicActive=false,stageClearMusicActive=false,gameOverMusicActive=false,normalMix=1,panicMix=0;
   let openingPlayPending=false,normalPlayPending=false,panicPlayPending=false,stageClearPlayPending=false,gameOverPlayPending=false;
@@ -1112,7 +1241,7 @@
   function startStageMusic(resetPosition=true){
     stopOpeningMusic(false);musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=false;normalMix=1;panicMix=0;
     if(resetPosition){normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.currentTime=0}
-    applyMusicVolumes();safeMediaPlay(normalBgm);if(waveState.phase==='deploying'&&waveState.rumbleStarted)startWaveRumble();
+    applyMusicVolumes();safeMediaPlay(normalBgm);resetWaveRumbleMotion();
   }
   function startStageClearMusic(){
     stopWaveRumble();stopOpeningMusic(false);musicSessionActive=true;panicActive=false;stageClearMusicActive=true;gameOverMusicActive=false;normalBgm.pause();panicBgm.pause();gameOverBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;gameOverBgm.currentTime=0;stageClearBgm.pause();stageClearBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(stageClearBgm)
@@ -1121,16 +1250,16 @@
     stopWaveRumble();stopOpeningMusic(false);musicSessionActive=true;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=true;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.pause();gameOverBgm.currentTime=0;normalMix=0;panicMix=0;applyMusicVolumes();safeMediaPlay(gameOverBgm)
   }
   function stopStageMusic(resetPosition=true){
-    stopWaveRumble();
+    resetWaveRumbleMotion();
     musicSessionActive=false;panicActive=false;stageClearMusicActive=false;gameOverMusicActive=false;normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();
     if(resetPosition){normalBgm.currentTime=0;panicBgm.currentTime=0;stageClearBgm.currentTime=0;gameOverBgm.currentTime=0}
     normalMix=1;panicMix=0;applyMusicVolumes();
   }
-  function pauseStageMusic(){normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();stopWaveRumble()}
+  function pauseStageMusic(){normalBgm.pause();panicBgm.pause();stageClearBgm.pause();gameOverBgm.pause();resetWaveRumbleMotion()}
   function resumeStageMusic(){
     if(!musicSessionActive)return;
     if(stageClearMusicActive)safeMediaPlay(stageClearBgm);else if(gameOverMusicActive)safeMediaPlay(gameOverBgm);else if(panicActive)safeMediaPlay(panicBgm);else safeMediaPlay(normalBgm);
-    if(waveState.phase==='deploying'&&waveState.rumbleStarted)startWaveRumble();
+    if(waveState.phase==='deploying')resetWaveRumbleMotion();
   }
   function updatePanicState(){
     if(clearPending||!segments.length){panicActive=false;return}
@@ -1241,6 +1370,9 @@
     const t=audioCtx?.currentTime||0;
     for(const gain of [active.gain,active.motorGain]){gain.gain.cancelScheduledValues(t);gain.gain.setValueAtTime(Math.max(.0001,gain.gain.value),t);gain.gain.exponentialRampToValueAtTime(.0001,t+.08)}
     try{active.src.stop(t+.09);active.motor.stop(t+.09)}catch{}
+  }
+  function resetWaveRumbleMotion(){
+    stopWaveRumble();waveState.rumbleStarted=false;waveRumblePositions.clear();
   }
   function sfxSafetyTick(delay=0){noise({duration:.020,gain:.024,delay,filter:4600,filterEnd:1050,type:'bandpass'})}
   function sfxBomb() {
@@ -1492,7 +1624,7 @@
     if(Number.isFinite(+meta?.difficulty))bits.push(`Score ${(+meta.difficulty).toFixed(1)}`);
     if(Number.isFinite(+meta?.campaignLevel))bits.push(`Level ${meta.campaignLevel}`);
     if(Number.isFinite(+meta?.tier))bits.push(`Tier ${meta.tier}`);
-    if(activeGameMode==='campaign')bits.push(`Difficulty: ${difficultyLabel()}`);
+    if(activeGameMode==='campaign'||activeGameMode==='random')bits.push(`Difficulty: ${difficultyLabel()}`);
     bits.push(`Profile: ${normalized.gameplay.profileId||'legacy'}`);
     stageStatus.textContent=bits.join(' · ');
     reset(normalized.gameplay.rngSeed);
@@ -1652,6 +1784,11 @@
     resultReplayBtn.hidden=false;resultSelectBtn.hidden=false;
     resultReplayBtn.textContent=t.replay;resultSelectBtn.textContent=t.stageSelect;
     if(activeGameMode==='survival'){resultReplayBtn.textContent=t.retry;return}
+    if(activeGameMode==='random'){
+      resultReplayBtn.textContent=cleared?t.nextRandom:t.retry;
+      resultSelectBtn.textContent=cleared?t.retrySame:t.newRandom;
+      return;
+    }
     if(activeGameMode!=='campaign')return;
     if(!cleared){resultReplayBtn.textContent=t.retry;resultSelectBtn.hidden=true;return}
     resultSelectBtn.textContent=t.replay;
@@ -1769,10 +1906,18 @@
     snapshot:()=>({campaignId:mainCampaignId,saveId:mainCampaignSaveId,custom:isCustomMainCampaign,levelCount:mainCampaignEntries.length,stageTestLevelCount:loadedStageEntries.length,stageTestIndex:loadedStageIndex,runSeed:seed,mode:activeGameMode,candidateSaveId:loadedCampaignCandidate?.saveId||null,candidateLevelCount:loadedCampaignCandidate?.entries.length||0,unlockedSurvival:survivalUnlockedIndices()})
   };
   window.__marblePopperPlayerSaveTest={build:buildPlayerSaveEnvelope,parse:parsePlayerSaveEnvelope,merge:mergePlayerSaveData,snapshot:()=>JSON.parse(JSON.stringify(saveData))};
+  window.__marblePopperRandomTest={
+    generate:(requestedSeed,onProgress=null)=>generateRandomStage(requestedSeed,onProgress),
+    start:requestedSeed=>startRandomStage(requestedSeed),
+    qualityPass:(depth,quality,crossings=0)=>randomStageQualityPass(depth,quality,crossings),
+    snapshot:()=>randomGenerationDebug?JSON.parse(JSON.stringify(randomGenerationDebug)):null,
+    progress:()=>({hidden:randomGeneratingOverlay.hidden,title:randomGeneratingTitle.textContent,detail:randomGeneratingDetail.textContent,busy:randomGenerationBusy}),
+    debugVisible:()=>randomDebugVisible
+  };
 
 
   function reset(newSeed=seed) {
-    stopWaveRumble();
+    resetWaveRumbleMotion();
     if(activeGameMode==='survival'&&survivalState)resetSurvivalRun();
     seed = (newSeed >>> 0) || 1;
     rng=mulberry32(seed);
@@ -1864,7 +2009,7 @@
     settleWaveClearBonus();waveClearBonus=null;waveClearOriginS=null;
     const preExistingIds=new Set();for(const seg of segments)for(const marble of seg.marbles)preExistingIds.add(marble.id);
     for(const seg of segments)seg.driven=false;
-    waveState.phase='deploying';waveState.waveIndex++;waveState.remaining=Math.min(stageWaveProfile.waveSize,spawnQueue.length);waveState.timer=0;waveState.connected=preExistingIds.size===0;waveState.rumbleStarted=false;waveState.preExistingIds=preExistingIds;
+    waveState.phase='deploying';waveState.waveIndex++;waveState.remaining=Math.min(stageWaveProfile.waveSize,spawnQueue.length);waveState.timer=0;waveState.connected=preExistingIds.size===0;waveState.rumbleStarted=false;waveState.preExistingIds=preExistingIds;waveRumblePositions.clear();
     spawnFirst();
     flashText=`WAVE ${waveState.waveIndex}`;flashTimer=.9;
     return true;
@@ -1875,12 +2020,20 @@
     // teleporting feed source; repairDriveInvariant will restart the feed at IN.
     return segments.find(seg=>seg.driven&&seg.marbles.some(m=>m.waveId===waveState.waveIndex))||null;
   }
-  function updateWaveRumbleSync(){
-    if(waveState.phase!=='deploying')return;
+  function updateWaveRumbleSync(dt=1/60){
+    if(waveState.phase!=='deploying'){resetWaveRumbleMotion();return}
     const feeder=waveFeederSegment();
-    let count=0,front=-Infinity;
-    if(feeder)for(const marble of feeder.marbles)if(marble.waveId===waveState.waveIndex){count++;front=Math.max(front,marble.s)}
-    const visiblyFlowing=front>=BALL_SPACING*1.25&&(count>=2||waveState.remaining===0);
+    const nextPositions=new Map();let visibleCount=0,maxForwardSpeed=0;
+    if(feeder)for(const marble of feeder.marbles)if(marble.waveId===waveState.waveIndex){
+      nextPositions.set(marble.id,marble.s);
+      if(marble.s>=0&&marble.s<=track.length){
+        visibleCount++;
+        const previous=waveRumblePositions.get(marble.id);
+        if(previous!=null)maxForwardSpeed=Math.max(maxForwardSpeed,(marble.s-previous)/Math.max(1e-4,dt));
+      }
+    }
+    waveRumblePositions=nextPositions;
+    const visiblyFlowing=visibleCount>0&&maxForwardSpeed>=5;
     if(visiblyFlowing&&!waveState.rumbleStarted){waveState.rumbleStarted=true;startWaveRumble()}
     else if(!visiblyFlowing&&waveState.rumbleStarted){stopWaveRumble();waveState.rumbleStarted=false}
   }
@@ -1899,7 +2052,7 @@
     if(joined){waveState.connected=true;sfxReconnect(Math.min(COLLISION_KICK_MAX,stageWaveProfile.deploymentSpeed*.34))}
   }
   function finishWaveDeployment(){
-    stopWaveRumble();waveState.phase=(activeGameMode==='survival'||spawnQueue.length)?'waiting':'complete';waveState.timer=stageWaveProfile.waveInterval;waveState.preExistingIds=new Set();
+    resetWaveRumbleMotion();waveState.phase=(activeGameMode==='survival'||spawnQueue.length)?'waiting':'complete';waveState.timer=stageWaveProfile.waveInterval;waveState.preExistingIds=new Set();
     flashText='FIRE!';flashTimer=.45;
   }
   function beginWaveClearBonus(remainingSeconds){
@@ -2001,7 +2154,7 @@
         if(feeder){for(const seg of segments)seg.driven=seg===feeder;return}
         if(waveState.remaining>0&&spawnImmediately){
           for(const seg of segments)seg.driven=false;
-          if(waveState.rumbleStarted){stopWaveRumble();waveState.rumbleStarted=false}
+          resetWaveRumbleMotion();
           spawnFirst();return
         }
         return;
@@ -2891,7 +3044,7 @@
 
     mergeTouchingSegments();
     spawnMore();
-    updateWaveRumbleSync();
+    updateWaveRumbleSync(dt);
     updateWaveState(dt);
     updateWaveClearBonus(dt);
     updateProjectiles(dt);
@@ -3281,7 +3434,7 @@
   function drawCanvasHud(){
     if(shellScreen!=='playing')return;
     const level=Number.isFinite(+activeStageMeta?.campaignLevel)?activeStageMeta.campaignLevel:(loadedStageIndex>=0?loadedStageIndex+1:'—');
-    const stageText=activeGameMode==='survival'?`${UI_TEXT[uiLanguage].survival} ${String(level).padStart(2,'0')} · ${formatDuration(survivalState?.elapsed)}`:`${UI_TEXT[uiLanguage].stage} ${String(level).padStart(2,'0')}${activeGameMode==='campaign'?` · ${difficultyLabel()}`:''}`;
+    const stageText=activeGameMode==='survival'?`${UI_TEXT[uiLanguage].survival} ${String(level).padStart(2,'0')} · ${formatDuration(survivalState?.elapsed)}`:activeGameMode==='random'?`${UI_TEXT[uiLanguage].randomStage} · TIER ${randomGenerationDebug?.tier??'—'} · ${difficultyLabel()}`:`${UI_TEXT[uiLanguage].stage} ${String(level).padStart(2,'0')}${activeGameMode==='campaign'?` · ${difficultyLabel()}`:''}`;
     const scoreText=`${UI_TEXT[uiLanguage].score} ${Math.round(displayScore).toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US')}`;
     ctx.save();ctx.font='800 20px system-ui';ctx.textBaseline='middle';
     const h=42,y=H-h-12,pad=14,stageW=ctx.measureText(stageText).width+pad*2,scoreW=ctx.measureText(scoreText).width+pad*2;
@@ -3294,6 +3447,22 @@
       ctx.font='800 15px system-ui';const pressureW=Math.min(650,ctx.measureText(pressure).width+30),pressureX=W/2-pressureW/2;
       ctx.fillStyle='rgba(4,11,18,.76)';ctx.strokeStyle='rgba(90,119,147,.62)';roundedRect(pressureX,y,pressureW,h,11);ctx.fill();ctx.stroke();
       ctx.fillStyle='#d9e7f4';ctx.textAlign='center';ctx.fillText(pressure,W/2,y+h/2);
+    }
+    if(activeGameMode==='random'&&randomGenerationDebug&&randomDebugVisible){
+      const d=randomGenerationDebug,ja=uiLanguage==='ja',status=d.status==='requirements-met'?(ja?'生成器要件合格':'GENERATOR REQUIREMENTS'):d.status==='relaxed-best'?(ja?'緩和要件ベスト採用':'RELAXED BEST'):d.status==='best-at-limit'?(ja?'有効候補ベスト採用':'BEST VALID'):(ja?'内蔵ステージ採用':'BUILT-IN FALLBACK');
+      const lines=[
+        `RANDOM DEBUG · ${status}`,
+        `${ja?'ティア':'TIER'} ${d.tier} · ${ja?'難易度':'DIFFICULTY'} ${difficultyLabel()} · ${d.family}`,
+        `SEED ${d.seed} · ${ja?'試行':'ATTEMPTS'} ${d.attempts}/${d.maxAttempts} · ${ja?'再試行':'RETRIES'} ${d.retries}`,
+        `${ja?'有効候補':'VALID'} ${d.validCandidates} · ${ja?'厳格合格':'STRICT'} ${d.strictCandidates} · ${ja?'形状棄却':'SHAPE REJECTED'} ${d.qualityRejected||0} · ${ja?'生成失敗':'FAILED'} ${d.hardRejected} · ${ja?'所要時間':'TIME'} ${d.elapsedMs.toFixed(2)} ms`,
+        `${ja?'品質':'QUALITY'} ${(d.quality*100).toFixed(1)} · ${ja?'最終長':'FINAL LENGTH'} ${Math.round(d.trackLength)} · ${ja?'生成長':'GENERATED'} ${Math.round(d.generatedLength)}`,
+        `${ja?'到達率 X/Y':'REACH X/Y'} ${Math.round(d.reachX*100)}% / ${Math.round(d.reachY*100)}% · ${ja?'被覆率':'COVERAGE'} ${Math.round(d.coverage*100)}%`,
+        `${ja?'立体交差':'CROSSINGS'} ${d.crossings} · ${ja?'形状':'TOPOLOGY'} ${d.topology} · ${ja?'上下反転':'FLIP'} ${d.verticalFlip?'YES':'NO'}`,
+        `${ja?'生成深度':'DEPTH'} ${d.densifyDepth} · ${ja?'候補展開':'BEAM'} ${d.beamCandidates} · ${ja?'停止理由':'STOP'} ${d.generatorStop}${d.fallbackLevel?` · LEVEL ${d.fallbackLevel} / STAGE TIER ${d.fallbackStageTier}`:''}`
+      ];
+      const x=18,top=18,w=520,lineH=22,boxH=lines.length*lineH+20;
+      ctx.fillStyle='rgba(4,11,18,.88)';ctx.strokeStyle=d.status==='requirements-met'?'rgba(91,223,167,.85)':'rgba(255,190,72,.86)';ctx.lineWidth=1.6;roundedRect(x,top,w,boxH,12);ctx.fill();ctx.stroke();
+      ctx.textAlign='left';ctx.textBaseline='middle';lines.forEach((line,i)=>{ctx.font=i===0?'900 15px system-ui':'700 13px system-ui';ctx.fillStyle=i===0?(d.status==='requirements-met'?'#84f1c1':'#ffd17b'):'#dce8f3';ctx.fillText(line,x+14,top+15+i*lineH)});
     }
     ctx.restore();
   }
@@ -3439,6 +3608,7 @@
     if(openingScreen())startOpeningMusic(false);
     if (e.code==='Escape'&&(shellScreen==='playing'||shellScreen==='paused')&&!e.repeat) {e.preventDefault();togglePause();return}
     if (e.code==='Escape'&&(shellScreen==='setup'||shellScreen==='survival'))returnToTitle();
+    if (e.code==='KeyD'&&activeGameMode==='random'&&(shellScreen==='playing'||shellScreen==='paused')&&!e.repeat){randomDebugVisible=!randomDebugVisible;showToast(uiLanguage==='ja'?`ランダムデバッグ表示: ${randomDebugVisible?'ON':'OFF'}`:`Random debug: ${randomDebugVisible?'ON':'OFF'}`);return}
     if (e.code==='KeyR'&&shellScreen==='playing') reset(seed);
     if (e.code==='KeyF'&&shellScreen==='playing'&&activeGameMode!=='survival'&&!e.repeat) forceStageClear();
     if (e.code==='Space'&&(shellScreen==='playing'||shellScreen==='paused')) { e.preventDefault(); togglePause(); }
@@ -3488,6 +3658,7 @@
   highScoreDifficultySelect.addEventListener('change',()=>setCampaignDifficulty(highScoreDifficultySelect.value));
   document.getElementById('stageTestModeBtn').addEventListener('click',()=>openSetup('stage-test'));
   document.getElementById('survivalModeBtn').addEventListener('click',openSurvivalSetup);
+  document.getElementById('randomModeBtn').addEventListener('click',()=>startRandomStage());
   document.getElementById('highScoresModeBtn').addEventListener('click',()=>{updateCampaignShell();setShellScreen('highscores')});
   document.getElementById('settingsModeBtn').addEventListener('click',()=>setShellScreen('settings'));
   document.getElementById('setupBackBtn').addEventListener('click',returnToTitle);
@@ -3499,15 +3670,17 @@
   document.getElementById('survivalStartBtn').addEventListener('click',()=>startSurvivalLevel(+survivalStageSelect.value));
   document.getElementById('resumeBtn').addEventListener('click',togglePause);
   document.getElementById('restartBtn').addEventListener('click',()=>{reset(seed);paused=false;setShellScreen('playing');startStageMusic(true)});
-  stageSelectBtn.addEventListener('click',()=>{if(activeGameMode==='campaign')return;paused=true;stopStageMusic(true);if(activeGameMode==='survival')openSurvivalSetup();else openSetup(setupMode)});
+  stageSelectBtn.addEventListener('click',()=>{if(activeGameMode==='campaign'||activeGameMode==='random')return;paused=true;stopStageMusic(true);if(activeGameMode==='survival')openSurvivalSetup();else openSetup(setupMode)});
   document.getElementById('titleBtn').addEventListener('click',returnToTitle);
   resultReplayBtn.addEventListener('click',()=>{
     if(activeGameMode==='survival'){startSurvivalLevel(survivalSelectedIndex);return}
+    if(activeGameMode==='random'){if(cleared)startRandomStage();else retryCurrentRandomStage();return}
     if(activeGameMode!=='campaign'){startSelectedStage();return}
     const target=cleared?campaignResultNextIndex:loadedStageIndex;
     if(target>=0)startMainCampaignLevel(target);
   });
   resultSelectBtn.addEventListener('click',()=>{
+    if(activeGameMode==='random'){if(cleared)retryCurrentRandomStage();else startRandomStage();return}
     if(activeGameMode==='campaign'){
       const target=campaignResultLevelIndex>=0?campaignResultLevelIndex:loadedStageIndex;
       if(target>=0)startMainCampaignLevel(target,{updateRun:false});

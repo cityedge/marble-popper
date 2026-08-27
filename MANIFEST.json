@@ -1,20 +1,20 @@
 {
   "format": "marble-popper-distribution",
   "schemaVersion": 1,
-  "package": "MarblePopper_v0.46",
-  "gameVersion": "0.46",
-  "builtAt": "2026-08-26T11:27:24.829349+00:00",
+  "package": "MarblePopper_v0.54",
+  "gameVersion": "0.54",
+  "builtAt": "2026-08-27T05:42:31.140630+00:00",
   "entryPoint": "index.html",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "bytes": 5694,
-      "sha256": "9d5c03b53751a32af12113362bb50c2bd2dc3feb59a8ef6d4c8d7396f5abe958"
+      "bytes": 10804,
+      "sha256": "f0d96da889fd3ba876c3fbb05d598b8cd08e4c096e901b6da140fbe0c54ef2ca"
     },
     {
       "path": "GITHUB_RELEASE_GUIDE.md",
       "bytes": 6895,
-      "sha256": "9c73a1f28c5e5b184d869ea4c3c17e9ba84522979146c9762944796e5a8b1017"
+      "sha256": "8d43a2eb64923d3b6f2bcda93c2327e4a8c896ba84f2d9225d044d0635ec0a5d"
     },
     {
       "path": "LICENSE",
@@ -23,28 +23,28 @@
     },
     {
       "path": "PLAY_MARBLE_POPPER.html",
-      "bytes": 209493,
-      "sha256": "c6bd576a0c0998cf17ab01a5f20419b9646dd026230bf6a47f97c0d4770c3008"
+      "bytes": 227294,
+      "sha256": "8a3f83b79e6343f1edf4c4a83ce1aad4c831db78d8ed780362039704c9a14e8b"
     },
     {
       "path": "README.md",
-      "bytes": 4343,
-      "sha256": "3c5af4eb1107c72c9bf27fcdbbbf4fea6d13376294aa3fb2369641e1e3188d30"
+      "bytes": 4551,
+      "sha256": "27d86c4f105a5285d6796aa95269b0b50486b7cbfbeae7fcf87583ad54c6b032"
     },
     {
       "path": "README.txt",
-      "bytes": 3889,
-      "sha256": "86656db1239d9db1049d7fd09c449ed8a1f4ea1aa8d0ee48d86c1039ccaec7a2"
+      "bytes": 4420,
+      "sha256": "afdef29b72f1c9c16b052169e8b2d999acb5c5dd4c8121073bb7be12647bcf07"
     },
     {
       "path": "TOOLS_USER_GUIDE.md",
       "bytes": 44443,
-      "sha256": "560627bd2d05f043cb0f2874b12362608b4985d5b1c43739269cda35cf3c9b0b"
+      "sha256": "48da21a1bd122c6ed4a174bc501e71dd7ce5379f58c7246fd3a7469f72a68548"
     },
     {
       "path": "USER_GUIDE.md",
-      "bytes": 32772,
-      "sha256": "3a9f13ea2aa3052042adfc3438cc77531f9575d5fe675c1673e22816d83256ae"
+      "bytes": 37543,
+      "sha256": "fa9d7293ee407741f29cee3c0cbf3d024434a1eb4fc7504e6f70ffce7733a102"
     },
     {
       "path": "assets/audio/bgm.ogg",
@@ -82,9 +82,14 @@
       "sha256": "922d9b3826f5531395203c646cf9ba2d0cf8585e3ed5e9970618f26b722e8dd0"
     },
     {
+      "path": "assets/data/stage_generator_core.js",
+      "bytes": 55511,
+      "sha256": "d79a0c54b7b65f625073a517ce308f46f89a627e260f9daa2db4b5c327e31b8c"
+    },
+    {
       "path": "index.html",
-      "bytes": 209493,
-      "sha256": "c6bd576a0c0998cf17ab01a5f20419b9646dd026230bf6a47f97c0d4770c3008"
+      "bytes": 227294,
+      "sha256": "8a3f83b79e6343f1edf4c4a83ce1aad4c831db78d8ed780362039704c9a14e8b"
     },
     {
       "path": "tools/CAMPAIGN_BUILDER.html",

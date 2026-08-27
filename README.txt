@@ -1,4 +1,4 @@
-MARBLE POPPER v0.46 + AUTHORING TOOLS
+MARBLE POPPER v0.54 + AUTHORING TOOLS
 =====================================
 
 日本語
@@ -47,6 +47,11 @@ HTMLファイルだけを別の場所へ移動しないでください。ゲー�
 ゲームの詳しい遊び方、スコア、サバイバル、セーブについては
 「USER_GUIDE.md」を参照してください。
 
+「ランダムステージ」はステージ生成器v0.19と同じ
+10ファミリー、密度化、平滑化、安全検査、0～2立体交差を使用します。
+固定探索上限で採用できない場合は内蔵キャンペーン面へフォールバックします。
+スコアや進行状況は保存しません。
+
 
 English
 -------
@@ -89,3 +94,7 @@ The "tools" folder contains the Stage Generator, Difficulty Evaluator, and
 Campaign Builder. Open each HTML directly. See "TOOLS_USER_GUIDE.md" for the
 complete workflow and parameter reference, and "USER_GUIDE.md" for detailed
 game rules, scoring, Survival, and save-data instructions.
+
+RANDOM STAGE uses the Stage Generator v0.19 core,
+including all ten families and 0–2 crossings, with a bounded termination policy
+and built-in campaign fallback. It does not save scores or progress.

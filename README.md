@@ -2,11 +2,11 @@
 
 重量感のあるマーブル、間欠的に押し寄せるWAVE、磁力で再接続する連鎖を組み合わせた、ローカルでも遊べるブラウザ向けマーブルポッパーです。
 
-公開パッケージには、100ステージのメインゲームとサバイバルモードに加えて、オリジナルキャンペーンを作るためのステージ生成器、難易度評価器、キャンペーンビルダーが含まれます。
+公開パッケージには、100ステージのメインゲーム、サバイバルモード、ランダムステージに加えて、オリジナルキャンペーンを作るためのステージ生成器、難易度評価器、キャンペーンビルダーが含まれます。
 
 ## すぐに遊ぶ
 
-1. GitHubの **Releases** から最新の `MarblePopper_v0.46.zip` をダウンロードします。
+1. GitHubの **Releases** から最新の `MarblePopper_v0.54.zip` をダウンロードします。
 2. ZIPをすべて展開します。
 3. `PLAY_MARBLE_POPPER.html` または `index.html` をChrome／Edgeで開きます。
 4. タイトル画面で難易度を選び、**ニューゲーム**を押します。
@@ -20,6 +20,7 @@ GitHub Pagesで公開している場合は、リポジトリのPages URLから�
 - 徐々に難しくなる100ステージのキャンペーン
 - EASY／NORMAL／HARD／VERY HARDの4難易度
 - クリア済みNORMALステージを使う無限サバイバル
+- ステージ生成器v0.19と同じ生成ロジック、0～2立体交差、固定探索上限と内蔵面フォールバックを使うランダムステージ（記録なし）
 - WAVE投入、磁力チェイン、ギャップショット、特殊マーブル
 - 面別・難易度別ハイスコアとサバイバル記録
 - ブラウザ自動保存とJSON形式のセーブ書き出し／統合読み込み
@@ -65,14 +66,14 @@ HTMLの場所、公開URL、ブラウザ、ブラウザプロファイルが変�
 
 ## 開発版の起動
 
-ビルド工程なしで `apps/marble_popper_mvp_v46.html` を開けます。配布ZIPを再構築する場合は、プロジェクトの仮想環境から次を実行します。
+ビルド工程なしで `apps/marble_popper_mvp_v54.html` を開けます。配布ZIPを再構築する場合は、プロジェクトの仮想環境から次を実行します。
 
 ```powershell
 .\.venv\Scripts\python.exe tools\build_distribution.py
 .\.venv\Scripts\python.exe tools\verify_distribution.py
 ```
 
-生成物は `dist/MarblePopper_v0.46/` と `dist/MarblePopper_v0.46.zip` です。
+生成物は `dist/MarblePopper_v0.54/` と `dist/MarblePopper_v0.54.zip` です。
 
 ## License
 
